@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Session 4 of 6. Architectures as promises about the data: convolution as inductive bias (LeNet), AlexNet and the GPU moment, ResNet's degradation problem, and embeddings as the product.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Seeing and embedding - learn deep learning with phoebe">
+<meta property="og:description" content="Session 4 of 6. Convolution's promise, ResNet's real problem, and the layer you sell.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/courses/04-seeing-and-embedding.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Seeing and embedding - learn deep learning with phoebe">
+<meta name="twitter:description" content="Session 4 of 6. Convolution's promise, ResNet's real problem, and the layer you sell.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Session 4 · Seeing and embedding - learn deep learning with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-deep-learning-with-phoebe</a> / Session 4 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Deep Learning with Phoebe · Session 4 of 6</div>
+    <h1>Seeing and <span class="accent">embedding</span></h1>
+    <p class="sub">Session 3 gave you the loop, and the loop will train whatever you wire in front of it. Tonight is about the wiring. An architecture, it turns out, is not a bag of tricks - it is a promise about the data, and the history of deep learning is the history of promises that paid off: convolution's bet that nearby pixels relate, AlexNet's bet on GPUs and scale, ResNet's bet that depth needed a highway, and the quiet industrial win of the hidden layer itself - the embedding, the part of the network businesses actually sell.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Hands-on</span>
+      <span class="chip audience">Builders - you own the loop from session 3</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-22 · Architectures as promises</span>
+      <span class="a3" style="flex:4">22-40 · Build-along: count what convolution saves</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>From loops to architectures</h2>
+    </div>
+    <p class="lede">You now own the five moves: forward, loss, backward, step, zero the gradients. The loop does not care what network you hand it - it trained the spiral net and it would train a thousand-layer monster with equal obedience. So the question moves up a level: what should you wire, and why does the shape of the wiring matter more than almost any knob you tuned last week? Tonight covers the three architectures that answered that question for vision, and the one output everyone quietly ships to production: the embedding.</p>
+
+    <div class="legend">
+      <span class="pill">🎫 Clear all three quiz questions to stamp your passport</span>
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> A one-line definition of inductive bias you can defend in a review. The two most misquoted numbers in deep learning history (AlexNet's 15.3 and ResNet's 3.57), quoted correctly. And a by-hand parameter count that shows convolution saving roughly 545x - and what that saving costs.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>An architecture is a promise about the data<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Every architecture bakes in an assumption before a single gradient flows. <strong>Convolution promises that nearby pixels relate</strong> - that a pattern worth detecting in one corner is worth detecting in every corner. <strong>Sequence models promise that order matters</strong> - that yesterday constrains today. <strong>A plain MLP promises nothing at all</strong> - every input may relate to every other, equally, in any direction.</p>
+        <p>Open-mindedness sounds like a virtue, but the MLP pays for it in parameters and data: with no assumption to lean on, every relationship must be learned from scratch, and the data must fund every one of those weights. When the promise matches the data, the architecture learns more from less. When it does not - and session 6's tabular showdown is exactly that mismatch - the promise is dead weight.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>You already run on promises. The tree course's booster promises that axis-aligned splits on individual features capture the signal - a promise tabular data usually keeps. Tonight's question, every time you meet a new dataset: what structure does this data actually have, and which architecture has already promised to exploit it?</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Tonight's vocabulary<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Inductive bias</strong> - the assumptions an architecture makes before seeing data. The stronger and truer the bias, the less data pays.</li>
+          <li><strong>Kernel / filter</strong> - a small grid of weights (3x3 tonight) slid across the image, computing the same detection everywhere.</li>
+          <li><strong>Receptive field</strong> - the patch of input a given unit can actually see. Grows as layers stack.</li>
+          <li><strong>Residual connection</strong> - a skip that adds a layer's input to its output: out = x + F(x). Session 4's second act.</li>
+          <li><strong>Embedding</strong> - the activation vector of a late hidden layer, used as learned coordinates. Session 4's third act, and the one you can ship.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers convolution as inductive bias</span>
+      <h2>LeNet's three moves</h2>
+      <span class="tag concept">7 min live</span>
+    </div>
+    <p class="lede">LeCun et al.'s 1998 LeNet-5 paper is the clearest statement of the promise ever written down. Three moves, each one a bet on how images work: <strong>local receptive fields</strong> (a unit looks at a neighborhood, not the whole image), <strong>shared weights</strong> (the same detector runs at every position), and <strong>spatial subsampling</strong> (nearby detections get pooled, buying tolerance to small shifts). Together: shift invariance, and a massive cut in parameters - all still trained end-to-end with the same gradient descent you ran last session.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A 3x3 kernel sliding over an image grid, reusing the same nine weights at every position, compared with a fully connected layer that needs a weight per pixel per unit">
+        <style>
+          .n4aB { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n4aW { font: 400 12px Inter, sans-serif; fill: #fff; }
+          .n4aK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n4aT { font: 400 12px Inter, sans-serif; fill: #111827; }
+          .n4aA { font: 700 12px Inter, sans-serif; fill: #92400E; }
+          .n4aS { font: 400 11px Inter, sans-serif; fill: #6B7280; }
+          .n4aN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <defs>
+          <marker id="n4Ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#D1D5DB"/></marker>
+        </defs>
+        <text class="n4aK" x="60" y="48">One kernel, every position</text>
+        <g>
+          <rect x="60" y="70" width="192" height="192" fill="#ECFEFF" stroke="#D1D5DB"/>
+          <line x1="84" y1="70" x2="84" y2="262" stroke="#D1D5DB"/><line x1="108" y1="70" x2="108" y2="262" stroke="#D1D5DB"/><line x1="132" y1="70" x2="132" y2="262" stroke="#D1D5DB"/><line x1="156" y1="70" x2="156" y2="262" stroke="#D1D5DB"/><line x1="180" y1="70" x2="180" y2="262" stroke="#D1D5DB"/><line x1="204" y1="70" x2="204" y2="262" stroke="#D1D5DB"/><line x1="228" y1="70" x2="228" y2="262" stroke="#D1D5DB"/>
+          <line x1="60" y1="94" x2="252" y2="94" stroke="#D1D5DB"/><line x1="60" y1="118" x2="252" y2="118" stroke="#D1D5DB"/><line x1="60" y1="142" x2="252" y2="142" stroke="#D1D5DB"/><line x1="60" y1="166" x2="252" y2="166" stroke="#D1D5DB"/><line x1="60" y1="190" x2="252" y2="190" stroke="#D1D5DB"/><line x1="60" y1="214" x2="252" y2="214" stroke="#D1D5DB"/><line x1="60" y1="238" x2="252" y2="238" stroke="#D1D5DB"/>
+        </g>
+        <rect x="60" y="70" width="72" height="72" fill="none" stroke="#F59E0B" stroke-width="3"/>
+        <rect x="156" y="166" width="72" height="72" fill="none" stroke="#F59E0B" stroke-width="3" stroke-dasharray="6 4"/>
+        <line x1="136" y1="146" x2="152" y2="162" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n4Ar)"/>
+        <text class="n4aA" x="60" y="290">the same 9 weights slide to every position</text>
+        <text class="n4aS" x="60" y="310">28x28 image (drawn 8x8 here)</text>
+        <rect x="430" y="70" width="390" height="76" rx="10" fill="#155E75"/>
+        <text class="n4aB" x="450" y="100">Fully connected layer, 100 units</text>
+        <text class="n4aW" x="450" y="124">784 pixels x 100 = 78,400 weights + 100 biases</text>
+        <rect x="430" y="166" width="390" height="76" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n4aK" x="450" y="196">16 conv kernels of 3x3</text>
+        <text class="n4aT" x="450" y="220">16 x 9 = 144 weights + 16 biases</text>
+        <rect x="430" y="262" width="390" height="58" rx="10" fill="#FFF7E6" stroke="#F59E0B" stroke-width="1.5"/>
+        <text class="n4aA" x="450" y="286">~545x fewer weights</text>
+        <text class="n4aT" x="450" y="306">because the kernel promises: patterns repeat in space</text>
+        <text class="n4aN" x="60" y="356">A vertical-edge detector useful at (3, 4) is useful at (20, 9) too - so LeNet learns it once and reuses it.</text>
+        <text class="n4aN" x="60" y="378">The saving is a promise about images, not a discount on all data. Break the promise and you paid for nothing.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the same nine weights everywhere, and what that buys</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The numbers, said correctly<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>LeNet-5 reached <strong>0.95 percent test error on MNIST digits</strong>, and 0.8 percent when the training set was augmented with distorted copies. Trained end-to-end with gradient descent - the promise did not need a special optimizer, just the loop you already run.</p>
+        <ul>
+          <li><strong>Precision trap:</strong> the 0.7 percent sometimes quoted from that paper belongs to <em>boosted LeNet-4</em> - an ensemble, not LeNet-5. Same lesson as every headline number tonight: check whether it is one model or a committee.</li>
+          <li><strong>Lineage trap:</strong> convolution did not appear in 1998. LeCun's zip-code nets used it in 1989, and the architectural idea traces to Fukushima's Neocognitron in 1980. 1998 is when the recipe was written down cleanly, not when it was invented.</li>
+        </ul>
+        <div class="callout tip">
+          <p><strong>What the 3x3 kernel cannot do:</strong> see anything wider than 3 pixels. One conv layer is nearsighted by design. The fix is stacking - each layer's units look at 3x3 patches of the layer below, so the effective receptive field grows with depth. Depth is how convolution keeps its local promise and still ends up seeing the whole image.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The three moves, one table<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <table class="clean">
+          <tr><th>Move</th><th>The promise it encodes</th><th>What it buys</th></tr>
+          <tr><td><strong>Local receptive fields</strong></td><td>Meaning is local: edges, corners, strokes live in small neighborhoods</td><td>Each unit needs 9 weights, not 784</td></tr>
+          <tr><td><strong>Shared weights</strong></td><td>A pattern worth detecting here is worth detecting everywhere</td><td>One detector serves all positions - the ~545x cut</td></tr>
+          <tr><td><strong>Spatial subsampling</strong></td><td>The exact pixel position of a detection matters less than its rough location</td><td>Tolerance to small shifts and distortions</td></tr>
+        </table>
+        <p>All three are restrictions - the network is <em>less</em> free than an MLP. That is the point. Inductive bias is the art of forbidding the network from learning things that cannot be true of the data.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers scale and depth</span>
+      <h2>AlexNet and ResNet: the two numbers everyone misquotes</h2>
+      <span class="tag concept">8 min live</span>
+    </div>
+    <p class="lede">Two papers turned convolution's promise into the modern field: AlexNet proved the promise scales, ResNet proved depth could be made trainable. Both come with a famous number, and both numbers are routinely quoted wrong. Tonight you learn the numbers <em>with their fine print</em>, because precision here is a professional tell.</p>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>AlexNet 2012: the GPU moment, quoted exactly<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Krizhevsky, Sutskever and Hinton entered the ILSVRC-2012 image recognition challenge with a 60-million-parameter convolutional network and, in the paper's own words:</p>
+        <div class="prompt-box good"><span class="label">The paper's words</span>"...winning top-5 test error rate of 15.3%, compared to 26.2% achieved by the second-best entry." The network took "between five and six days to train on two GTX 580 3GB GPUs".</div>
+        <p>Now the fine print, which is course content, not a footnote:</p>
+        <ul>
+          <li><strong>15.3 was their ENTRY - a 7-CNN ensemble.</strong> The single network scored 18.2 percent on validation. Say "their entry scored 15.3", never "the network scored 15.3".</li>
+          <li><strong>The runner-up at 26.2 was classical computer vision</strong> - hand-engineered features, the best the old paradigm had. That is what makes the gap historic: it was a paradigm gap, not a tuning gap.</li>
+          <li><strong>The accurate shorthand:</strong> AlexNet's entry cut top-5 error by over 10 points, roughly 40 percent relative. Never say "halved" - it overshoots.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Five to six days on two consumer gaming GPUs. The bitter economics lesson of 2012 was not the architecture - LeNet had the promise 14 years earlier - it was that compute plus data had finally caught up to the promise. When you evaluate a deep learning pitch, ask the AlexNet question: does this team have the data and compute to fund the architecture they chose?</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>ResNet 2015: the degradation problem<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>By 2015 the field had a strange embarrassment. He et al. open their paper with it:</p>
+        <div class="prompt-box good"><span class="label">The paper's words</span>"Deeper neural networks are more difficult to train." Their fix: "explicitly reformulate the layers as learning residual functions with reference to the layer inputs."</div>
+        <p>The embarrassment, precisely: stack more plain layers and <strong>training error got worse</strong>. Not test error - training error. A 56-layer plain net fit the training data worse than a 20-layer one. That rules out overfitting entirely (an overfitter aces training and flunks test). This is the <strong>degradation problem</strong>: an optimization failure, a network that mathematically contains the shallower solution but that gradient descent cannot steer to it.</p>
+        <p>The residual fix is one addition: out = x + F(x). Each block now learns the <em>difference</em> from identity, and doing nothing (F = 0) is trivially learnable. Result: 152 layers, "8x deeper than VGG", and first place at ILSVRC 2015 with a top-5 error of 3.57 percent.</p>
+        <ul>
+          <li><strong>Precision trap:</strong> 3.57 is - again - an <em>ensemble</em> number. The committee habit runs right through this history.</li>
+          <li><strong>Mechanism trap:</strong> "ResNet fixed vanishing gradients" is wrong. Batch normalization had largely handled vanishing gradients already; the paper's claim is <strong>optimization tractability</strong> - identity shortcuts make the deeper solution easy to find.</li>
+          <li><strong>Scope trap:</strong> the celebrated 1000+ layer experiments are on CIFAR, not ImageNet.</li>
+        </ul>
+      </div>
+    </details>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 390" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left: training error curves showing a plain 56-layer network staying worse than a plain 20-layer network. Right: the residual block, where the input skips around the weight layers and is added back, giving out equals x plus F of x">
+        <style>
+          .n4bB { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n4bW { font: 400 12px Inter, sans-serif; fill: #fff; }
+          .n4bK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n4bT { font: 400 12px Inter, sans-serif; fill: #111827; }
+          .n4bR { font: 700 12px Inter, sans-serif; fill: #991B1B; }
+          .n4bP { font: 700 12px Inter, sans-serif; fill: #0E7490; }
+          .n4bS { font: 400 11px Inter, sans-serif; fill: #6B7280; }
+          .n4bN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <defs>
+          <marker id="n4Br" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#D1D5DB"/></marker>
+        </defs>
+        <text class="n4bK" x="60" y="48">The degradation problem (TRAIN error)</text>
+        <line x1="80" y1="70" x2="80" y2="280" stroke="#6B7280" stroke-width="1.5"/>
+        <line x1="80" y1="280" x2="410" y2="280" stroke="#6B7280" stroke-width="1.5"/>
+        <text class="n4bS" x="86" y="84">training error</text>
+        <text class="n4bS" x="300" y="298">training iterations</text>
+        <path d="M90,110 C160,165 240,185 400,193" fill="none" stroke="#991B1B" stroke-width="2.5"/>
+        <path d="M90,120 C160,190 240,225 400,238" fill="none" stroke="#0E7490" stroke-width="2.5"/>
+        <text class="n4bR" x="248" y="170">plain 56-layer: WORSE</text>
+        <text class="n4bP" x="248" y="262">plain 20-layer</text>
+        <text class="n4bT" x="90" y="322">Worse on the data it trains on - so this is</text>
+        <text class="n4bT" x="90" y="340">an optimization failure, not overfitting.</text>
+        <text class="n4bK" x="530" y="48">The residual fix</text>
+        <rect x="560" y="62" width="160" height="40" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n4bK" x="640" y="87" text-anchor="middle">input x</text>
+        <line x1="640" y1="102" x2="640" y2="134" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n4Br)"/>
+        <rect x="560" y="138" width="160" height="56" rx="10" fill="#155E75"/>
+        <text class="n4bB" x="640" y="162" text-anchor="middle">weight layers</text>
+        <text class="n4bW" x="640" y="182" text-anchor="middle">learn F(x)</text>
+        <line x1="640" y1="194" x2="640" y2="226" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n4Br)"/>
+        <circle cx="640" cy="252" r="22" fill="#F59E0B"/>
+        <text class="n4bK" x="640" y="258" text-anchor="middle">+</text>
+        <path d="M724,82 C812,82 812,246 668,251" fill="none" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n4Br)"/>
+        <text class="n4bP" x="746" y="160">skip: identity,</text>
+        <text class="n4bP" x="746" y="178">gradient highway</text>
+        <line x1="640" y1="274" x2="640" y2="300" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n4Br)"/>
+        <rect x="548" y="304" width="184" height="40" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n4bK" x="640" y="329" text-anchor="middle">out = x + F(x)</text>
+        <text class="n4bN" x="60" y="378">Learning "do nothing" now means F(x) = 0 - trivial. The deeper net can always match the shallower one, then improve.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - deeper got worse on TRAIN error, and the one addition that fixed it</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>This is session 3's spiral lesson, in architecture form<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Remember the spiral: the 1x8 net sat at 55 percent looking like a capacity problem, then the same net hit 100 with a hotter rate and more epochs. <strong>The capacity was there; the optimizer had not arrived.</strong> The degradation problem is the same story at scale: the 56-layer plain net contained the 20-layer solution (set 36 layers to identity), but gradient descent could not find it.</p>
+        <p>Residual connections are the architectural version of that lesson: instead of asking the optimizer to work harder, reshape the problem so the good solutions are easy to reach. Capacity is not just what a network <em>can</em> express - it is what the optimizer can <em>find</em>. ResNet moved "find" closer to "can".</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 3 ============ -->
+  <section class="section" id="part-3">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · covers representations as the product</span>
+      <h2>Embeddings: the layer you actually ship</h2>
+      <span class="tag concept">4 min live</span>
+    </div>
+    <p class="lede">Back in session 2 you met the 1986 backprop paper's real pitch - not the algorithm, the payoff: hidden units "come to represent important features of the task domain". Four decades later that sentence is an industry. The layers <em>before</em> the output are a learned coordinate system where similar things sit near each other - and word embeddings, product embeddings, and customer embeddings are exactly that: hidden-layer activations, extracted and sold as a feature.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A 2D projection of an embedding space: dresses cluster near skirts, jeans near cargo pants, and returns-risk customers form their own cluster, with distance meaning learned similarity">
+        <style>
+          .n4cK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n4cT { font: 400 11px Inter, sans-serif; fill: #111827; }
+          .n4cA { font: 700 11px Inter, sans-serif; fill: #92400E; }
+          .n4cP { font: 700 11px Inter, sans-serif; fill: #0E7490; }
+          .n4cS { font: 400 11px Inter, sans-serif; fill: #6B7280; }
+          .n4cN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <defs>
+          <marker id="n4Cr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#D1D5DB"/></marker>
+          <marker id="n4Cl" markerWidth="8" markerHeight="8" refX="1" refY="4" orient="auto"><path d="M8,0 L0,4 L8,8 z" fill="#D1D5DB"/></marker>
+        </defs>
+        <text class="n4cK" x="60" y="44">The embedding space (2D projection)</text>
+        <rect x="60" y="58" width="520" height="252" rx="12" fill="#ECFEFF" stroke="#D1D5DB"/>
+        <ellipse cx="160" cy="130" rx="82" ry="52" fill="none" stroke="#D1D5DB" stroke-dasharray="6 4"/>
+        <circle cx="130" cy="112" r="6" fill="#155E75"/><text class="n4cT" x="142" y="108">dress</text>
+        <circle cx="178" cy="132" r="6" fill="#155E75"/><text class="n4cT" x="190" y="128">skirt</text>
+        <circle cx="122" cy="152" r="6" fill="#155E75"/><text class="n4cT" x="134" y="156">gown</text>
+        <ellipse cx="330" cy="242" rx="88" ry="46" fill="none" stroke="#D1D5DB" stroke-dasharray="6 4"/>
+        <circle cx="298" cy="230" r="6" fill="#0E7490"/><text class="n4cT" x="310" y="226">jeans</text>
+        <circle cx="352" cy="250" r="6" fill="#0E7490"/><text class="n4cT" x="364" y="246">cargo pants</text>
+        <circle cx="292" cy="262" r="6" fill="#0E7490"/><text class="n4cT" x="304" y="266">joggers</text>
+        <ellipse cx="478" cy="120" rx="80" ry="50" fill="none" stroke="#F59E0B" stroke-dasharray="6 4"/>
+        <circle cx="452" cy="104" r="6" fill="#F59E0B"/>
+        <circle cx="492" cy="122" r="6" fill="#F59E0B"/>
+        <circle cx="458" cy="142" r="6" fill="#F59E0B"/>
+        <text class="n4cA" x="424" y="88">returns-risk customers</text>
+        <line x1="222" y1="156" x2="272" y2="212" stroke="#D1D5DB" stroke-width="2" marker-start="url(#n4Cl)" marker-end="url(#n4Cr)"/>
+        <text class="n4cP" x="98" y="200">distance = learned similarity</text>
+        <text class="n4cK" x="620" y="90">What the dots are</text>
+        <text class="n4cS" x="620" y="114">Each dot is a hidden-layer</text>
+        <text class="n4cS" x="620" y="132">activation vector, projected</text>
+        <text class="n4cS" x="620" y="150">down to 2D for viewing.</text>
+        <text class="n4cS" x="620" y="182">Nobody placed these points.</text>
+        <text class="n4cS" x="620" y="200">Training on the task pushed</text>
+        <text class="n4cS" x="620" y="218">similar things together -</text>
+        <text class="n4cS" x="620" y="236">the 1986 promise, made</text>
+        <text class="n4cS" x="620" y="254">measurable and sellable.</text>
+        <text class="n4cN" x="60" y="340">The output layer answers one question. The layer before it answers thousands - that is why embeddings get shipped.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the hidden layer as a learned coordinate system</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>From 1986's promise to a product<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Train a network on any task and the late hidden layers become a map: inputs the task treats similarly end up close together. Extract that vector and you have an embedding - a learned feature that other models, searches, and recommenders can reuse. The classifier was the training exercise; the representation is the asset.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Mango Lane could embed products from co-purchase sequences: train a net to predict what gets bought together, then harvest the hidden layer. Products bought in similar contexts land near each other - dresses near skirts - without anyone tagging categories. The recommendation course's matrix factorization is a shallow cousin of exactly this: two embedding tables and a dot product, no depth.</p>
+        </div>
+        <div class="callout tip">
+          <p><strong>The honest boundary.</strong> Transformers and LLMs are this idea at industrial scale - embeddings of words and their contexts, stacked and refined. They belong to the GenAI shelf of this hub, and this course stops at the pointer. What you should carry across: when someone says "the model understands", the checkable claim underneath is "the embedding places similar things near each other".</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Count what convolution saves</h2>
+      <span class="tag demo">★ 18 min · everyone builds</span>
+    </div>
+    <p class="lede">No code tonight - arithmetic and paper. The promise of Part 1 becomes a number you compute yourself, and by step 5 you will have designed your own embedding.</p>
+
+    <div class="steps">
+      <div class="step"><p><strong>Price the open mind.</strong> A 28x28 grayscale image (784 pixels) into a fully-connected layer of 100 units: every unit sees every pixel, so 784 x 100 = <strong>78,400 weights</strong>, plus 100 biases. Write it down - that is what "promises nothing" costs.</p></div>
+      <div class="step"><p><strong>Price the promise.</strong> The same image through 16 conv kernels of 3x3: each kernel is 9 shared weights, so 16 x 9 = <strong>144 weights</strong>, plus 16 biases. Write both numbers side by side and the ratio: 78,400 / 144 is roughly <strong>545x fewer weights</strong>. That factor is bought entirely by the assumption that patterns repeat across the image.</p></div>
+      <div class="step"><p><strong>Say what the kernel cannot see - one sentence.</strong> A 3x3 kernel is blind to anything wider than 3 pixels. Then say the fix: stacking layers grows the receptive field, because each layer's units see 3x3 patches of the layer below - depth is how a local promise ends up covering the whole image.</p></div>
+      <div class="step"><p><strong>Sketch a residual block on paper.</strong> Take any two layers you like, wrap them as F, and draw the skip: out = x + F(x). Mark the skip arrow and note next to it: the gradient now has a highway - and "do nothing" costs the optimizer nothing, because F(x) = 0 recovers the input exactly.</p></div>
+      <div class="step"><p><strong>Design your domain's embedding - one sentence.</strong> Name the entities (products? customers? support tickets?), and say what similarity should mean (bought in the same baskets? churn for the same reasons?). If you can write that sentence, you have specified an embedding; the network's job is only to make it measurable.</p></div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>What to bring to session 5.</strong> Your parameter counts. Session 5 is about what a network does when you give it far more parameters than data - and its first exhibit is a net you will price the same way you priced these.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 5</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li><strong>Redo the parameter count for a 5x5 kernel</strong> (25 weights each, 16 kernels). Notice the ratio against fully-connected barely moves - the saving comes from sharing, not from the kernel being tiny.</li>
+      <li><strong>Stack receptive fields by hand:</strong> two 3x3 conv layers - how wide a patch of the original image can a second-layer unit see? (Draw it: 5x5.) Three layers? (7x7.) Write the pattern.</li>
+      <li><strong>Rehearse the two corrections aloud:</strong> "15.3 was their entry - a 7-CNN ensemble; the single net was 18.2 on validation" and "degradation is a training failure, not overfitting - deeper plain nets got worse train error". Once each, out loud. They will come up in real meetings.</li>
+      <li><strong>Find the embedding already near you:</strong> one system at work that ranks, recommends, or searches. Ask what representation it compares. If the answer is hand-built rules or raw features, you have found where a learned embedding would go.</li>
+      <li><strong>Optional:</strong> skim section 1 of the ResNet paper (arXiv:1512.03385) - just the figure showing 56-layer vs 20-layer training curves. You now know exactly what you are looking at.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+    <p>Clear all three and session 4 gets stamped in your passport.</p>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · Your by-hand count showed 16 conv kernels using ~545x fewer weights than a fully-connected layer on the same image. Why is this a promise about images rather than a free lunch on all data?</p>
+      <button class="qopt" type="button">A · It is a free lunch - fewer parameters always means better models on any data</button>
+      <button class="qopt" type="button">B · The saving comes from sharing one detector across all positions, which only helps if patterns genuinely repeat in space - on data with no spatial structure the assumption buys nothing</button>
+      <button class="qopt" type="button">C · The saving is an accounting trick - the shared weights secretly cost as much as the full 78,400 at training time</button>
+      <p class="qwhy">Shared weights encode "a pattern worth detecting here is worth detecting everywhere" - true of images, where a vertical edge means the same thing at any position. On data without that structure (session 6's tabular churn table, for instance), the restriction removes capacity the data actually needed. Inductive bias is a bet: 545x cheaper when it pays, dead weight when it does not.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · Before ResNet, a plain 56-layer network performed worse than a plain 20-layer one. What made this the "degradation problem" rather than ordinary overfitting?</p>
+      <button class="qopt" type="button">A · The deeper net had too many parameters for the dataset, the classic overfitting signature</button>
+      <button class="qopt" type="button">B · The deeper net overfit the test set through repeated evaluation</button>
+      <button class="qopt" type="button">C · The deeper net was worse on TRAINING error - it failed to fit data it could see, which is an optimization failure, not overfitting</button>
+      <p class="qwhy">An overfitter aces training and flunks test. The 56-layer plain net got worse on the training set itself, despite mathematically containing the 20-layer solution. He et al.'s fix reformulates layers "as learning residual functions with reference to the layer inputs" - making "do nothing" trivially learnable. And note the adjacent trap: this is optimization tractability, not vanishing gradients - BatchNorm had largely handled those.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · A slide claims "AlexNet halved ImageNet error: 15.3% vs 26.2%". What is the precise version?</p>
+      <button class="qopt" type="button">A · Their ENTRY - a 7-CNN ensemble - scored 15.3 top-5 (single net: 18.2 val); the gap is over 10 points, ~40% relative, not half</button>
+      <button class="qopt" type="button">B · The claim is fully correct as stated - one network scored 15.3 and that is half of 26.2</button>
+      <button class="qopt" type="button">C · The numbers are reversed - AlexNet scored 26.2 and the runner-up 15.3</button>
+      <p class="qwhy">The paper reports a "winning top-5 test error rate of 15.3%, compared to 26.2% achieved by the second-best entry" - and that winning entry averaged 7 CNNs, with the single network at 18.2 percent validation. 26.2 to 15.3 is not halving; "cut top-5 by over 10 points, roughly 40 percent relative" is the honest shorthand. Say "their entry" and you will be more precise than most conference speakers.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ OFFICIAL COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What this session teaches, and where it came from</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">LeCun et al. 1998, LeNet-5</span><span class="note">Convolution as inductive bias: local fields, shared weights, subsampling; 0.95% MNIST (0.8% with distortions) - 0.7% belongs to the boosted LeNet-4 ensemble; lineage credited to LeCun 1989 and Fukushima 1980</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Krizhevsky, Sutskever &amp; Hinton 2012, AlexNet</span><span class="note">Entry 15.3% vs 26.2% top-5, 60M parameters, five to six days on two GTX 580s - with the ensemble caveat (single net 18.2 val) and the "over 10 points, ~40% relative" shorthand</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">He et al. 2015, ResNet</span><span class="note">The degradation problem as a training failure; residual reformulation; 152 layers, ensemble 3.57% top-5 - not a vanishing-gradients fix, and the 1000+ layer runs are CIFAR</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Rumelhart, Hinton &amp; Williams 1986</span><span class="note">The representations thread only - hidden units "come to represent important features of the task domain" - carried forward from session 2 into the embedding story</span></div>
+    </div>
+    <p class="mono" style="margin-top:14px">Full source map with every URL and every honesty caveat: <span class="mono">materials/official-course-map.md</span> in this repo.</p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 4 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Architecture = promise</b><span>Convolution: nearby pixels relate. Sequences: order matters. MLP: nothing - and it pays in parameters and data.</span></div>
+      <div class="cheat-item"><b>LeNet's three moves</b><span>Local receptive fields, shared weights, spatial subsampling. Shift invariance plus a massive parameter cut.</span></div>
+      <div class="cheat-item"><b>The count</b><span>FC on 28x28: 78,400 weights. 16 kernels of 3x3: 144. Roughly 545x - bought by the promise, not for free.</span></div>
+      <div class="cheat-item"><b>AlexNet, said right</b><span>Their ENTRY (7-CNN ensemble) hit 15.3 vs 26.2. Over 10 points, ~40% relative. Never "halved".</span></div>
+      <div class="cheat-item"><b>Degradation ≠ overfitting</b><span>Deeper plain nets got worse TRAIN error. Fix: out = x + F(x). Tractability, not vanishing gradients.</span></div>
+      <div class="cheat-item"><b>Embeddings</b><span>Late hidden layers = learned coordinates where similar things sit near each other. The 1986 promise, shipped as a product.</span></div>
+    </div>
+  </section>
+
+  <div class="callout next">
+    <span class="nx-pill">Next session</span>
+    <p>Tonight's architectures earn their parameters. Session 5 is about what happens when they do not: a network with more parameters than data points will happily memorize everything - including, famously, completely random labels. The diagnosis, the medicine cabinet in the right order, and the strange plot twist where bigger sometimes recovers.</p>
+  </div>
+
+  <footer class="pagefoot">
+    <span>Session 4 of 6 · learn-deep-learning-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="03-the-training-loop.html">← Prev: The training loop</a> &nbsp;·&nbsp; <a href="05-taming-the-net.html">Next: Taming the net →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

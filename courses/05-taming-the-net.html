@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Session 5 of 6. Networks memorize random labels - so why do they generalize? The overfitting diagnosis, the medicine cabinet in the right order (data, early stopping, dropout, AdamW), and the double-descent plot twist.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Taming the net - learn deep learning with phoebe">
+<meta property="og:description" content="Session 5 of 6. Memorization, its medicine in the right order, and the double-descent twist.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/courses/05-taming-the-net.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Taming the net - learn deep learning with phoebe">
+<meta name="twitter:description" content="Session 5 of 6. Memorization, its medicine in the right order, and the double-descent twist.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Session 5 · Taming the net - learn deep learning with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-deep-learning-with-phoebe</a> / Session 5 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Deep Learning with Phoebe · Session 5 of 6</div>
+    <h1>Taming the <span class="accent">net</span></h1>
+    <p class="sub">The loop works. Architectures promise. And yet a network with more parameters than data points WILL memorize the training set if you let it - next session's showdown contains a live specimen, a 2x16 MLP scoring 100 on train and 60 on holdout from 200 rows. Tonight is the taming: the one diagnosis that matters, a shocking 2017 result about what nets can memorize, the medicine cabinet in its correct order, and a plot twist where making the net even bigger sometimes - sometimes - makes things better again.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Hands-on</span>
+      <span class="chip audience">Builders - you own the loop from session 3</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-20 · Memorization and its medicine</span>
+      <span class="a3" style="flex:5">20-40 · Build-along: the taming checklist</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>The net that knows too much</h2>
+    </div>
+    <p class="lede">Quick recap of where you stand: sessions 1-2 built the unit and the blame assignment, session 3 gave you the live loop, session 4 gave you architectures that spend parameters wisely. Tonight's problem is the opposite of session 4's: not too little capacity in the wrong shape, but too much capacity with nothing to stop it. Every number tonight points at session 6, where the 2x16 memorizer meets its holdout score in public.</p>
+
+    <div class="legend">
+      <span class="pill">🎫 Clear all three quiz questions to stamp your passport</span>
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> The one-look overfitting diagnosis. The Zhang et al. random-labels result, with its exact scope. A medicine cabinet you can recite in order. And one honest sentence about double descent that will survive contact with a skeptical meeting.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The diagnosis before the medicine<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>You already saw the shape in session 3's stuck-shapes gallery: <strong>training accuracy keeps climbing while validation goes flat, then drifts down</strong>. Train-up-test-flat. That gap is overfitting, and it is the only diagnosis tonight - everything else is treatment.</p>
+        <p>Every item in tonight's cabinet attacks that same gap from a different side: more data makes the training set harder to memorize; early stopping quits before the memorizing starts; dropout makes memorizing unreliable; weight decay makes it expensive; a smaller net makes it impossible. <strong>The order matters</strong> - and Part 2 gives you the order with sources attached.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>The live specimen, from next session's showdown canon: on 200 training rows of Mango Lane churn data, the 2x16 MLP reaches train 100, holdout 60 - the worst holdout of every net tested, precisely because it fit best. Memorization is not a theoretical risk. It is the default behavior of an untamed net on small data.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Tonight's vocabulary<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Generalization gap</strong> - train score minus test score. The number every treatment tries to shrink.</li>
+          <li><strong>Regularization</strong> - anything that trades training fit for holdout performance, from extra data to weight penalties.</li>
+          <li><strong>Interpolation threshold</strong> - the capacity at which a model can fit the training data exactly. Part 3's landmark.</li>
+          <li><strong>Label noise</strong> - wrong labels in the training set. Where double descent shows itself most clearly.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the memorization result</span>
+      <h2>The shocking baseline: nets memorize random labels</h2>
+      <span class="tag concept">6 min live</span>
+    </div>
+    <p class="lede">Before trusting any medicine, measure the disease. In 2017, Zhang, Bengio, Hardt, Recht and Vinyals ran the cleanest possible experiment: take state-of-the-art convolutional networks and train them on image labels that are <em>completely random</em>. If nets learn patterns, this should fail. It did not.</p>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The experiment, in the paper's words<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <div class="prompt-box good"><span class="label">The paper's words</span>State-of-the-art convolutional networks "easily fit a random labeling of the training data" - and the result is essentially unchanged by explicit regularization, and holds even when the true images are replaced by completely random pixels.</div>
+        <ul>
+          <li><strong>Random labels:</strong> the nets reach perfect training accuracy. There is no pattern to learn - this is pure memorization, and the architecture does it without complaint.</li>
+          <li><strong>With regularizers on:</strong> essentially the same. The standard toolkit does not remove the memorization capacity.</li>
+          <li><strong>Random pixels:</strong> still fits. The result is not about image structure at all.</li>
+        </ul>
+        <p>The punchline is a negative result about theory: if the same architecture can memorize noise perfectly, then <strong>classical complexity measures - counting capacity - cannot explain why that architecture generalizes on real labels</strong>. The capacity to memorize was always there. Something else decides whether it gets used.</p>
+        <p>Cite it as ICLR 2017 (or the 2021 CACM republication) - never 2016, whatever a slide deck tells you.</p>
+      </div>
+    </details>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two identical networks: one trained on real labels reaches high train and high test accuracy; one trained on shuffled labels reaches 100 percent train accuracy but chance-level test accuracy">
+        <style>
+          .n5aB { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n5aK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n5aT { font: 400 12px Inter, sans-serif; fill: #111827; }
+          .n5aA { font: 700 12px Inter, sans-serif; fill: #92400E; }
+          .n5aR { font: 700 12px Inter, sans-serif; fill: #991B1B; }
+          .n5aS { font: 400 11px Inter, sans-serif; fill: #6B7280; }
+          .n5aN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <rect x="60" y="50" width="360" height="230" rx="12" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n5aK" x="80" y="80">Same net, REAL labels</text>
+        <circle cx="110" cy="130" r="6" fill="#155E75"/><circle cx="110" cy="160" r="6" fill="#155E75"/><circle cx="110" cy="190" r="6" fill="#155E75"/>
+        <line x1="116" y1="130" x2="164" y2="145" stroke="#D1D5DB"/><line x1="116" y1="160" x2="164" y2="145" stroke="#D1D5DB"/><line x1="116" y1="190" x2="164" y2="145" stroke="#D1D5DB"/>
+        <line x1="116" y1="130" x2="164" y2="175" stroke="#D1D5DB"/><line x1="116" y1="160" x2="164" y2="175" stroke="#D1D5DB"/><line x1="116" y1="190" x2="164" y2="175" stroke="#D1D5DB"/>
+        <circle cx="170" cy="145" r="6" fill="#0E7490"/><circle cx="170" cy="175" r="6" fill="#0E7490"/>
+        <line x1="176" y1="145" x2="222" y2="160" stroke="#D1D5DB"/><line x1="176" y1="175" x2="222" y2="160" stroke="#D1D5DB"/>
+        <circle cx="228" cy="160" r="6" fill="#06B6D4"/>
+        <rect x="270" y="120" width="130" height="34" rx="8" fill="#155E75"/>
+        <text class="n5aB" x="335" y="142" text-anchor="middle">train: high</text>
+        <rect x="270" y="166" width="130" height="34" rx="8" fill="#155E75"/>
+        <text class="n5aB" x="335" y="188" text-anchor="middle">test: high</text>
+        <text class="n5aS" x="80" y="248">Looks like learning: patterns found,</text>
+        <text class="n5aS" x="80" y="264">patterns transfer to unseen data.</text>
+        <rect x="460" y="50" width="360" height="230" rx="12" fill="#FFF7E6" stroke="#F59E0B" stroke-width="1.5"/>
+        <text class="n5aA" x="480" y="80">Same net, SHUFFLED labels</text>
+        <circle cx="510" cy="130" r="6" fill="#155E75"/><circle cx="510" cy="160" r="6" fill="#155E75"/><circle cx="510" cy="190" r="6" fill="#155E75"/>
+        <line x1="516" y1="130" x2="564" y2="145" stroke="#D1D5DB"/><line x1="516" y1="160" x2="564" y2="145" stroke="#D1D5DB"/><line x1="516" y1="190" x2="564" y2="145" stroke="#D1D5DB"/>
+        <line x1="516" y1="130" x2="564" y2="175" stroke="#D1D5DB"/><line x1="516" y1="160" x2="564" y2="175" stroke="#D1D5DB"/><line x1="516" y1="190" x2="564" y2="175" stroke="#D1D5DB"/>
+        <circle cx="570" cy="145" r="6" fill="#0E7490"/><circle cx="570" cy="175" r="6" fill="#0E7490"/>
+        <line x1="576" y1="145" x2="622" y2="160" stroke="#D1D5DB"/><line x1="576" y1="175" x2="622" y2="160" stroke="#D1D5DB"/>
+        <circle cx="628" cy="160" r="6" fill="#06B6D4"/>
+        <rect x="670" y="120" width="130" height="34" rx="8" fill="#155E75"/>
+        <text class="n5aB" x="735" y="142" text-anchor="middle">train: 100</text>
+        <rect x="670" y="166" width="130" height="34" rx="8" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+        <text class="n5aR" x="735" y="188" text-anchor="middle">test: chance</text>
+        <text class="n5aS" x="480" y="248">No pattern exists - yet the net fits</text>
+        <text class="n5aS" x="480" y="264">perfectly. Pure memorization.</text>
+        <text class="n5aK" x="440" y="316" text-anchor="middle">Identical architecture, identical training - only the labels changed.</text>
+        <text class="n5aN" x="60" y="352">The memorization capacity was always there, and explicit regularizers barely dent it. So capacity counting alone</text>
+        <text class="n5aN" x="60" y="370">cannot explain why the left panel generalizes. That open question is what Part 3's double descent lives inside.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the same net, real vs shuffled labels: the capacity was always there</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>What the result does NOT say<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The paper shows classical tools are <strong>insufficient</strong> - it does not show generalization is unexplainable. The working answers under active research: the <strong>implicit bias of SGD</strong> (gradient descent prefers certain solutions among the many that fit), <strong>margin-based measures</strong>, and Part 3's <strong>double descent</strong>. The honest summary for a meeting: "we can measure that these nets generalize, and we can rule out the textbook explanation; the replacement theory is still being written."</p>
+        <p>Practical consequence, and the bridge to Part 2: since the architecture will not protect you from memorization, <em>you</em> have to - with data, stopping rules, and the rest of the cabinet.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the treatments, in order</span>
+      <h2>The medicine cabinet</h2>
+      <span class="tag concept">7 min live</span>
+    </div>
+    <p class="lede">Five treatments, ordered by preference, each with its source and its fine print. The order is not taste - it is the difference between fixing the disease and suppressing the symptom.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The medicine cabinet as an ordered shelf: more data, early stopping, dropout, weight decay via AdamW, smaller model - each with a one-line note on when to reach for it">
+        <style>
+          .n5bB { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n5bW { font: 400 11px Inter, sans-serif; fill: #fff; }
+          .n5bK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n5bT { font: 400 11px Inter, sans-serif; fill: #111827; }
+          .n5bS { font: 400 11px Inter, sans-serif; fill: #6B7280; }
+          .n5bN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <text class="n5bK" x="60" y="48">Reach left first</text>
+        <circle cx="130" cy="86" r="13" fill="#155E75"/><text class="n5bB" x="130" y="91" text-anchor="middle">1</text>
+        <circle cx="284" cy="86" r="13" fill="#155E75"/><text class="n5bB" x="284" y="91" text-anchor="middle">2</text>
+        <circle cx="438" cy="86" r="13" fill="#155E75"/><text class="n5bB" x="438" y="91" text-anchor="middle">3</text>
+        <circle cx="592" cy="86" r="13" fill="#155E75"/><text class="n5bB" x="592" y="91" text-anchor="middle">4</text>
+        <circle cx="746" cy="86" r="13" fill="#155E75"/><text class="n5bB" x="746" y="91" text-anchor="middle">5</text>
+        <rect x="60" y="110" width="140" height="90" rx="10" fill="#155E75"/>
+        <text class="n5bB" x="130" y="148" text-anchor="middle">More data</text>
+        <text class="n5bW" x="130" y="170" text-anchor="middle">the by far best</text>
+        <rect x="214" y="110" width="140" height="90" rx="10" fill="#0E7490"/>
+        <text class="n5bB" x="284" y="148" text-anchor="middle">Early stopping</text>
+        <text class="n5bW" x="284" y="170" text-anchor="middle">quit before the cram</text>
+        <rect x="368" y="110" width="140" height="90" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n5bK" x="438" y="148" text-anchor="middle">Dropout</text>
+        <text class="n5bT" x="438" y="170" text-anchor="middle">break co-adaptation</text>
+        <rect x="522" y="110" width="140" height="90" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n5bK" x="592" y="142" text-anchor="middle">Weight decay</text>
+        <text class="n5bK" x="592" y="160" text-anchor="middle">(AdamW)</text>
+        <text class="n5bT" x="592" y="182" text-anchor="middle">make weights cheap</text>
+        <rect x="676" y="110" width="140" height="90" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n5bK" x="746" y="148" text-anchor="middle">Smaller model</text>
+        <text class="n5bT" x="746" y="170" text-anchor="middle">remove the capacity</text>
+        <line x1="52" y1="212" x2="828" y2="212" stroke="#6B7280" stroke-width="3"/>
+        <text class="n5bS" x="130" y="238" text-anchor="middle">always first, when</text>
+        <text class="n5bS" x="130" y="254" text-anchor="middle">you can get it</text>
+        <text class="n5bS" x="284" y="238" text-anchor="middle">free - your s3</text>
+        <text class="n5bS" x="284" y="254" text-anchor="middle">validation habit</text>
+        <text class="n5bS" x="438" y="238" text-anchor="middle">FC heads and</text>
+        <text class="n5bS" x="438" y="254" text-anchor="middle">transformers</text>
+        <text class="n5bS" x="592" y="238" text-anchor="middle">decoupled, via</text>
+        <text class="n5bS" x="592" y="254" text-anchor="middle">torch.optim.AdamW</text>
+        <text class="n5bS" x="746" y="238" text-anchor="middle">when data is small</text>
+        <text class="n5bS" x="746" y="254" text-anchor="middle">and fixed</text>
+        <text class="n5bN" x="60" y="298">Order matters: data fixes the disease, the rest manage the symptom. Karpathy calls more data the by far best</text>
+        <text class="n5bN" x="60" y="316">and preferred regularizer. Every shelf item attacks the same diagnosis: train climbing, validation flat.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the cabinet, ordered: reach left before reaching right</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Medicines 1 and 2: data, then the clock<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>(a) More data.</strong> Karpathy's recipe puts it beyond argument:</p>
+        <div class="prompt-box good"><span class="label">Karpathy's recipe</span>"...get more data - the by far best and preferred way to regularize a model in any practical setting."</div>
+        <p>Every other treatment trades something away. Data does not - it directly makes the training set unmemorizable and the patterns unmistakable. It is only ever skipped because it is inconvenient, which is not a statistical argument.</p>
+        <p><strong>(b) Early stopping.</strong> You already do this: session 3's habit of watching the validation curve. Stop when validation stops improving - the net was learning patterns first and noise second, so quitting early keeps the patterns and skips the cram. The ensemble course's early-stopping law on boosted trees is the same medicine administered to a different species.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Medicines 3 and 4: dropout and decay, with fine print<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>(c) Dropout</strong> (Srivastava et al., JMLR 2014), mechanism verbatim:</p>
+        <div class="prompt-box good"><span class="label">The paper's words</span>"The key idea is to randomly drop units (along with their connections) from the neural network during training. This prevents units from co-adapting too much."</div>
+        <ul>
+          <li>The theory: training with random deletions approximates <em>averaging exponentially many thinned networks</em>. Note the verb - it is an approximation argument, not a literal ensemble like the tree course's forests.</li>
+          <li>Modern usage: mostly fully-connected heads and transformers; less in conv layers, where normalization layers took over the job.</li>
+        </ul>
+        <p><strong>(d) Weight decay, done right.</strong> For years people wrote "L2 regularization" and "weight decay" interchangeably. Loshchilov and Hutter's AdamW paper (ICLR 2019) showed the equivalence has a boundary:</p>
+        <div class="prompt-box good"><span class="label">The paper's words</span>L2 regularization and weight decay "are equivalent for standard stochastic gradient descent... but as we demonstrate this is not the case for adaptive gradient algorithms, such as Adam". Decoupling them "substantially improves Adam's generalization performance".</div>
+        <p>With Adam, the L2 penalty gets rescaled by the adaptive step sizes - exactly the weights with large gradients get under-regularized. The fix is decoupling the decay from the gradient update, which is why <strong>torch.optim.AdamW is today's default</strong> and plain Adam plus L2 is the quiet bug in a thousand training scripts.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Medicine 5, and how the cabinet maps to your loop<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <table class="clean">
+          <tr><th>Treatment</th><th>One line in PyTorch</th><th>What it costs</th></tr>
+          <tr><td><strong>More data</strong></td><td>Nothing to type - collect, or augment</td><td>Time and money, never accuracy</td></tr>
+          <tr><td><strong>Early stopping</strong></td><td>Track val loss, keep the best checkpoint</td><td>A validation split</td></tr>
+          <tr><td><strong>Dropout</strong></td><td>nn.Dropout(p) in the FC head</td><td>Slower convergence, a p to tune</td></tr>
+          <tr><td><strong>Weight decay</strong></td><td>torch.optim.AdamW(..., weight_decay=...)</td><td>A coefficient to tune</td></tr>
+          <tr><td><strong>Smaller model</strong></td><td>Fewer layers, narrower widths</td><td>Capacity you might have needed</td></tr>
+        </table>
+        <p>Smaller model is last on the shelf for a reason Part 3 makes vivid: capacity you remove is gone, and the relationship between capacity and generalization is stranger than the textbook says.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 3 ============ -->
+  <section class="section" id="part-3">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · covers the plot twist</span>
+      <h2>Double descent: when bigger recovers</h2>
+      <span class="tag concept">4 min live</span>
+    </div>
+    <p class="lede">The textbook says capacity has a sweet spot: too little underfits, too much overfits, tune to the valley of the U. Belkin and colleagues showed the U is not the whole curve.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The double descent curve: test error follows the classical U up to the interpolation threshold, spikes, then descends a second time as capacity grows further, with the session 6 nets marked at 2x16 near the peak and 3x32 on the second descent">
+        <style>
+          .n5cK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n5cA { font: 700 12px Inter, sans-serif; fill: #92400E; }
+          .n5cS { font: 400 11px Inter, sans-serif; fill: #6B7280; }
+          .n5cP { font: 700 12px Inter, sans-serif; fill: #0E7490; }
+          .n5cN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <line x1="80" y1="70" x2="80" y2="300" stroke="#6B7280" stroke-width="1.5"/>
+        <line x1="80" y1="300" x2="810" y2="300" stroke="#6B7280" stroke-width="1.5"/>
+        <text class="n5cS" x="86" y="84">test error</text>
+        <text class="n5cS" x="600" y="322">model capacity (parameters)</text>
+        <path d="M100,150 C170,235 240,250 310,225 C370,200 410,140 450,105" fill="none" stroke="#155E75" stroke-width="2.5"/>
+        <path d="M450,105 C500,175 590,225 780,252" fill="none" stroke="#0E7490" stroke-width="2.5"/>
+        <line x1="450" y1="70" x2="450" y2="300" stroke="#6B7280" stroke-width="1.5" stroke-dasharray="6 4"/>
+        <text class="n5cS" x="458" y="86">interpolation</text>
+        <text class="n5cS" x="458" y="102">threshold</text>
+        <text class="n5cP" x="170" y="120">the classical U</text>
+        <text class="n5cP" x="600" y="130">the second descent</text>
+        <circle cx="428" cy="122" r="7" fill="#F59E0B"/>
+        <text class="n5cA" x="290" y="92">2x16 here: holdout 60</text>
+        <line x1="360" y1="98" x2="422" y2="116" stroke="#D1D5DB" stroke-width="2"/>
+        <circle cx="680" cy="238" r="7" fill="#F59E0B"/>
+        <text class="n5cA" x="620" y="272">3x32 here: holdout 68</text>
+        <text class="n5cN" x="60" y="352">Most visible with label noise near the threshold. Not a law that bigger always wins, and not a regularization amnesty.</text>
+        <text class="n5cN" x="60" y="370">Session 6 shows the shape measured: the 401-param net at 60, the 2,369-param net at 68, same 200 rows.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the U was only the first half of the curve</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The claim, its scope, and where the full story lives<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <div class="prompt-box good"><span class="label">Belkin et al., PNAS 2019</span>"This 'double descent' curve subsumes the textbook U-shaped bias-variance trade-off curve by showing how increasing model capacity beyond the point of interpolation results in improved performance."</div>
+        <p>Nakkiran et al. then showed the effect in modern deep nets, both <strong>model-wise</strong> (grow the network) and <strong>epoch-wise</strong> (train longer) - and found regimes where, strangely, <strong>more data hurts</strong>. The scope, which is content and not a disclaimer: the effect is most visible with label noise near the interpolation threshold, and it does NOT mean bigger is always better or that regularization is obsolete.</p>
+        <p>You will see the shape with your own eyes next session: the 3x32 overparameterized net (holdout 68) beats the 2x16 memorizer (holdout 60) on the exact same 200 rows - a measured dip-and-recovery, live. And note who still wins that showdown: the booster at 73. Recovery is not victory.</p>
+        <div class="callout tip">
+          <p><strong>One card, on purpose.</strong> Why nets in the second descent generalize - implicit bias, interpolation theory, the whole epistemology fight - is a parked course of its own on this hub. Tonight you get the curve, the caveat, and the live evidence. The debate gets its own room.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>The taming checklist</h2>
+      <span class="tag demo">★ 20 min · everyone builds</span>
+    </div>
+    <p class="lede">The scenario is next session's exact setup: a churn MLP on 6 features and 200 training rows. You will price the nets, predict their fates, and prescribe - before session 6 reveals the measured answers.</p>
+
+    <div class="steps">
+      <div class="step"><p><strong>Compute the parameter counts.</strong> 1x8: (6x8 + 8) + (8x1 + 1) = 56 + 9 = <strong>65</strong>. 2x16: (6x16 + 16) + (16x16 + 16) + (16x1 + 1) = 112 + 272 + 17 = <strong>401</strong>. 3x32: (6x32 + 32) + (32x32 + 32) + (32x32 + 32) + (32x1 + 1) = 224 + 1,056 + 1,056 + 33 = <strong>2,369</strong>. Verify each sum yourself - the habit from session 1, now with stakes.</p></div>
+      <div class="step"><p><strong>Write the params-per-row ratios.</strong> On 200 rows: 65/200 is about 0.3, 401/200 is about 2, 2,369/200 is about 12. One net cannot afford to memorize, one can memorize comfortably, one could memorize the dataset several times over. Circle the middle one - it is tonight's patient.</p></div>
+      <div class="step"><p><strong>Predict each config's fate</strong> - train and holdout, in writing, before session 6 shows the measured numbers. Use tonight's two lessons: the 2x16 has the capacity and no medicine, and the biggest net is past the threshold. Sealed predictions get compared against the live showdown next week.</p></div>
+      <div class="step"><p><strong>Order the medicine for the 2x16.</strong> More data is unavailable in the lab (the dataset is fixed at 200 rows), so: <strong>early stopping first</strong> - it is free and you already track validation - then smaller model or weight decay. Write the order and one reason per line.</p></div>
+      <div class="step"><p><strong>Two sentences, your own words.</strong> First, the Zhang sentence - something like: "our nets can memorize anything, so the fact that they generalize is not explained by their size". Second, the double-descent meeting sentence: "bigger sometimes recovers - and it is not a license to skip regularization".</p></div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>What to bring to session 6.</strong> Your sealed predictions from step 3. The showdown runs all three nets plus the tree course's booster on byte-identical data, and the most instructive number will be whichever one you got wrong.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 6</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li><strong>Recompute the three parameter counts from scratch</strong> without looking, then check against tonight. If any layer's count surprises you, draw it as neurons and count the arrows.</li>
+      <li><strong>Run the diagnosis on something real:</strong> find one train/validation curve pair at work (any model, any tool). Is the gap growing? Which shelf item would you reach for first, and why is it not the third one?</li>
+      <li><strong>Audit one training script</strong> (yours or a colleague's) for the Adam + L2 bug: if it uses Adam with an L2 penalty instead of AdamW with decoupled decay, you have found a real instance of tonight's Part 2(d).</li>
+      <li><strong>Write your prediction table for session 6:</strong> logistic baseline, 1x8, 2x16, 3x32, booster - five holdout guesses, committed on paper.</li>
+      <li><strong>Optional:</strong> read the first page of Zhang et al. (arXiv:1611.03530). The experiments are exactly as simple as tonight claimed - that simplicity is the paper's power.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+    <p>Clear all three and session 5 gets stamped in your passport.</p>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">1 · Zhang et al. showed state-of-the-art nets "easily fit a random labeling of the training data", barely changed by regularization. What does this prove - and not prove?</p>
+      <button class="qopt" type="button">A · It proves deep learning does not really work and generalization is an illusion</button>
+      <button class="qopt" type="button">B · It proves regularization is useless and should be dropped from training</button>
+      <button class="qopt" type="button">C · It proves classical capacity-based complexity measures are INSUFFICIENT to explain generalization - not that generalization is unexplainable; implicit SGD bias, margins and double descent are the ongoing candidates</button>
+      <p class="qwhy">The same architecture that generalizes on real labels memorizes pure noise perfectly - so counting its capacity cannot be what separates the two outcomes. That is a negative result about the textbook theory, not about the nets: they demonstrably generalize on real data. The replacement explanation is active research, which is why this course hands the full debate to its own parked course.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">2 · Why does AdamW exist, when Adam plus an L2 penalty was already standard?</p>
+      <button class="qopt" type="button">A · L2 and weight decay are equivalent for standard SGD but NOT for adaptive methods like Adam - the adaptive step sizes rescale the L2 penalty, so decoupling the decay substantially improves Adam's generalization</button>
+      <button class="qopt" type="button">B · AdamW converges faster than Adam on all problems, which is why it replaced it</button>
+      <button class="qopt" type="button">C · Adam cannot accept an L2 penalty at all, so decay had to be bolted on separately</button>
+      <p class="qwhy">Loshchilov and Hutter's exact framing: the two "are equivalent for standard stochastic gradient descent... but as we demonstrate this is not the case for adaptive gradient algorithms, such as Adam". Under Adam, weights with large gradient history get their L2 penalty shrunk by the adaptive scaling - the decay stops decaying where it matters most. Decoupled decay fixes it, which is why torch.optim.AdamW is today's default.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">3 · A colleague says double descent "disproves the bias-variance trade-off". What did Belkin et al. actually claim?</p>
+      <button class="qopt" type="button">A · That the U-shaped curve was measurement error and never existed</button>
+      <button class="qopt" type="button">B · That the double-descent curve SUBSUMES the textbook U-shaped curve - the U is real up to the interpolation threshold, then capacity beyond it can improve performance again; most visible with label noise near the threshold</button>
+      <button class="qopt" type="button">C · That any sufficiently big model beats any smaller one, making regularization obsolete</button>
+      <p class="qwhy">The paper's word is "subsumes": the classical curve is the first half of a longer one, not a mistake. And the scope travels with the claim - the effect shows most clearly with label noise near the interpolation threshold, and it licenses neither "bigger is always better" nor skipping regularization. Session 6's measured version: 2x16 at holdout 60, 3x32 at 68, booster still at 73.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ OFFICIAL COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What this session teaches, and where it came from</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Zhang et al., ICLR 2017 (CACM 2021)</span><span class="note">Nets "easily fit a random labeling"; unchanged by regularization; random pixels too - classical complexity measures shown insufficient, not generalization unexplainable</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Srivastava et al. 2014, dropout</span><span class="note">Random unit dropping prevents co-adaptation; approximates averaging exponentially many thinned nets (approximation, not literal ensemble); modern home is FC heads + transformers</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Loshchilov &amp; Hutter, ICLR 2019, AdamW</span><span class="note">L2 = weight decay under SGD but not under Adam; decoupled decay substantially improves generalization; torch.optim.AdamW is the default</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Belkin et al. 2019 + Nakkiran et al. 2019, double descent</span><span class="note">The curve that subsumes the U; model-wise and epoch-wise; label-noise scope - teaser card only, the parked epistemology course owns the full debate</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Karpathy, A Recipe for Training Neural Networks</span><span class="note">"Get more data - the by far best and preferred way to regularize a model in any practical setting" - the top of the cabinet</span></div>
+    </div>
+    <p class="mono" style="margin-top:14px">Full source map with every URL and every honesty caveat: <span class="mono">materials/official-course-map.md</span> in this repo.</p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 5 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>The diagnosis</b><span>Train up, validation flat then drifting down. One look at the two curves; everything else is treatment.</span></div>
+      <div class="cheat-item"><b>The Zhang result</b><span>Nets easily fit random labels, regularizers barely matter - so capacity counting cannot explain generalization.</span></div>
+      <div class="cheat-item"><b>The cabinet order</b><span>More data, early stopping, dropout, weight decay, smaller model. Data fixes the disease; the rest manage it.</span></div>
+      <div class="cheat-item"><b>The AdamW rule</b><span>L2 = decay under SGD, NOT under Adam. Use torch.optim.AdamW; Adam + L2 is the quiet bug.</span></div>
+      <div class="cheat-item"><b>Double descent, scoped</b><span>Subsumes the U; clearest with label noise near the interpolation threshold. Not a regularization amnesty.</span></div>
+      <div class="cheat-item"><b>The specimen's numbers</b><span>On 200 rows: 65 / 401 / 2,369 params = 0.3 / 2 / 12 per row. The middle one memorizes: train 100, holdout 60.</span></div>
+    </div>
+  </section>
+
+  <div class="callout next">
+    <span class="nx-pill">Next session</span>
+    <p>Session 6 is the showdown this course has been walking toward: your three nets and a logistic baseline against the ensemble course's tuned gradient booster, on byte-identical Mango Lane data. Your sealed predictions get opened, the double-descent shape gets measured, and the honest question finally gets answered in numbers: when does deep learning actually win?</p>
+  </div>
+
+  <footer class="pagefoot">
+    <span>Session 5 of 6 · learn-deep-learning-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="04-seeing-and-embedding.html">← Prev: Seeing and embedding</a> &nbsp;·&nbsp; <a href="06-when-deep-learning.html">Next: When deep learning →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

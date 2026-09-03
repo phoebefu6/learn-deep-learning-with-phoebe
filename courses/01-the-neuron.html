@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Session 1 of 6. The neuron from scratch: weights, bias, activation - why stacking linear things buys nothing, and what the universal approximation theorem actually promises (and refuses to promise).">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="The neuron - learn deep learning with phoebe">
+<meta property="og:description" content="Session 1 of 6. Weights, bias, activation - and the theorem everyone misquotes.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/courses/01-the-neuron.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The neuron - learn deep learning with phoebe">
+<meta name="twitter:description" content="Session 1 of 6. Weights, bias, activation - and the theorem everyone misquotes.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Session 1 · The neuron - learn deep learning with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-deep-learning-with-phoebe</a> / Session 1 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Deep Learning with Phoebe · Session 1 of 6</div>
+    <h1>The <span class="accent">neuron</span></h1>
+    <p class="sub">Strip away the mythology and a neuron is three numbers and a squash: multiply the inputs by weights, add a bias, bend the result. Everything in this course - the backprop you will do by hand, the boundaries you will watch a live network carve, the honest fight against the tree course's champion - is built from this one unit. Tonight you compute neurons on paper, discover why stacking linear things buys exactly nothing, and read the famous approximation theorem closely enough to catch what it refuses to promise.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Start here</span>
+      <span class="chip audience">Builders - comfortable with a weighted sum</span>
+      <span class="chip audience">No PyTorch yet, on purpose</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-22 · The unit, the bend, the theorem</span>
+      <span class="a3" style="flex:4">22-40 · Build-along: neurons on paper</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>How this course works</h2>
+    </div>
+    <p class="lede">Six sessions, 45 minutes each, one network followed all the way: built as scalars on paper (sessions 1-2), trained live in your browser where every forward and backward pass is real (session 3), grown into the architectures that ate vision (session 4), tamed when it memorizes (session 5), and finally benchmarked - honestly, on identical data - against the gradient booster from the ensemble methods course (session 6). The build-it-yourself ethos is deliberate: the whole modern stack is this session's neuron, repeated.</p>
+
+    <div class="legend">
+      <span class="pill">🎫 Clear all three quiz questions to stamp your passport</span>
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> The neuron computed by hand until it is boring. The one-line proof-sketch of why depth without nonlinearity is a scam. And the exact scope of the universal approximation theorem, which will let you catch its misuse in roughly every third AI meeting.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The whole unit, in one line<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A neuron takes inputs x1..xn and computes <strong>a = f(w1·x1 + ... + wn·xn + b)</strong>. The weights w say how much each input matters and in which direction. The bias b shifts the threshold. The activation f bends the line - tanh squashes to (-1, 1), ReLU clips negatives to zero, sigmoid squashes to (0, 1).</p>
+        <p>That is the entire unit. A layer is neurons sharing the same inputs; a network is layers feeding layers. When the press says a model "has 70 billion parameters", it is counting the w's and b's in this line.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Mango Lane's churn score in the tree course started from the same raw material: days since last order, orders, tickets. A single neuron with weights (+ on days, - on orders, + on tickets) IS a tiny churn scorer - it just cannot express "inactive AND low sessions" as a distinct condition yet. That gap is what tonight's Part 2 is about.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The vocabulary for the whole arc<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Forward pass</strong> - push inputs through the layers to an output. Session 1's whole job.</li>
+          <li><strong>Loss</strong> - one number scoring how wrong the output is. Sessions 2-3 chase it downhill.</li>
+          <li><strong>Backward pass</strong> - the chain rule walked in reverse, assigning each weight its share of the blame. Session 2, by hand.</li>
+          <li><strong>Hidden layer</strong> - any layer between input and output. What its neurons compute is not designed - it is learned, and that is the 1986 result session 2 quotes.</li>
+          <li><strong>Activation / nonlinearity</strong> - the bend. Without it, no depth is real depth (Part 2 proves it in three lines).</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the unit itself</span>
+      <h2>Three numbers and a squash</h2>
+      <span class="tag concept">6 min live</span>
+    </div>
+    <p class="lede">One neuron, drawn honestly, with real numbers flowing through it. Anyone who can multiply can run this by hand - which is exactly what the build-along makes you do until it stops feeling clever.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Anatomy of one neuron: three inputs multiplied by weights, summed with a bias, passed through a tanh activation to produce the output">
+        <style>
+          .n1aB { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n1aK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n1aS { font: 400 11px Inter, sans-serif; fill: #6B7280; }
+          .n1aW { font: 700 11px Inter, sans-serif; fill: #0E7490; }
+          .n1aN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <defs>
+          <marker id="n1Ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#D1D5DB"/></marker>
+        </defs>
+        <rect x="60" y="60" width="150" height="40" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n1aK" x="135" y="85" text-anchor="middle">days = 62</text>
+        <rect x="60" y="150" width="150" height="40" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n1aK" x="135" y="175" text-anchor="middle">orders = 1</text>
+        <rect x="60" y="240" width="150" height="40" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n1aK" x="135" y="265" text-anchor="middle">tickets = 4</text>
+        <line x1="210" y1="80" x2="400" y2="160" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n1Ar)"/>
+        <text class="n1aW" x="290" y="100">x 0.04</text>
+        <line x1="210" y1="170" x2="400" y2="172" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n1Ar)"/>
+        <text class="n1aW" x="290" y="160">x -0.5</text>
+        <line x1="210" y1="260" x2="400" y2="184" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n1Ar)"/>
+        <text class="n1aW" x="290" y="238">x 0.3</text>
+        <rect x="404" y="130" width="180" height="84" rx="42" fill="#155E75"/>
+        <text class="n1aB" x="494" y="164" text-anchor="middle">sum + bias</text>
+        <text class="n1aB" x="494" y="186" text-anchor="middle" style="font-weight:400">2.48 - 0.5 + 1.2 - 2 = 1.18</text>
+        <line x1="584" y1="172" x2="650" y2="172" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n1Ar)"/>
+        <rect x="654" y="140" width="166" height="64" rx="12" fill="#F59E0B"/>
+        <text class="n1aK" x="737" y="166" text-anchor="middle">tanh(1.18)</text>
+        <text class="n1aK" x="737" y="188" text-anchor="middle">= 0.83</text>
+        <text class="n1aS" x="494" y="234" text-anchor="middle">bias b = -2 shifts the threshold: quiet by default</text>
+        <text class="n1aN" x="60" y="320">Weights: 0.04 per idle day, -0.5 per order, +0.3 per ticket. Output 0.83: this neuron votes strongly churn-ish.</text>
+        <text class="n1aN" x="60" y="342">Change any weight and the vote changes. Learning IS changing the weights - nothing else moves.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - one neuron, real numbers, no mystery left</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>What each part is FOR<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Weights are learned opinions.</strong> 0.04 per idle day means idleness matters, gently, toward churn. The sign is the direction; the magnitude is the volume. Nothing else in the network carries knowledge.</li>
+          <li><strong>The bias is the threshold.</strong> With b = -2, this neuron stays quiet unless the weighted evidence clears 2. Without a bias, every neuron would be forced to fire at the origin, which is almost never where the interesting boundary lives.</li>
+          <li><strong>The activation is the commitment device.</strong> tanh(1.18) = 0.83 turns unbounded evidence into a bounded vote. And its S-shape is what makes the calculus of session 2 work: near the extremes the neuron is confident and barely budges; near zero it is undecided and learns fast.</li>
+        </ul>
+        <div class="callout tip">
+          <p><strong>One habit from tonight forward: count parameters.</strong> This neuron has 4 (three weights, one bias). A layer of 8 such neurons: 32. Session 3's spiral-solving network of two hidden layers of 16: 353. Parameters are the budget the data has to pay for - a number you will use against overfitting in session 5 and in every architecture review after.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Choosing the bend: tanh, ReLU, sigmoid<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <table class="clean">
+          <tr><th>Activation</th><th>Shape</th><th>Where it shines</th><th>Its known trouble</th></tr>
+          <tr><td><strong>tanh</strong></td><td>S-curve, (-1, 1), zero-centered</td><td>Small nets, this course's engine</td><td>Saturates: gradients vanish at the extremes</td></tr>
+          <tr><td><strong>ReLU</strong></td><td>max(0, z) - a hinge</td><td>Deep nets; cheap; the modern default</td><td>Dead units: a neuron stuck below zero learns nothing</td></tr>
+          <tr><td><strong>sigmoid</strong></td><td>S-curve, (0, 1)</td><td>Output layers needing a probability</td><td>As a hidden activation, saturates worse than tanh</td></tr>
+        </table>
+        <p>The course engine uses tanh in hidden layers and sigmoid at the output - the classic small-network recipe, and the one whose derivatives you can verify by hand in session 2.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers why nonlinearity</span>
+      <h2>Stacking linear things buys nothing</h2>
+      <span class="tag concept">7 min live</span>
+    </div>
+    <p class="lede">Remove the activation and a deep network collapses. Not degrades - collapses, mathematically, into a single linear model wearing a costume. Three lines show it, and one tiny dataset from 1969 shows why it matters.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two stacked linear layers algebraically collapse into one linear layer, while adding a nonlinearity between them prevents the collapse">
+        <style>
+          .n1bB { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n1bK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n1bM { font: 600 13px Inter, sans-serif; fill: #111827; }
+          .n1bN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+          .n1bR { font: 700 12px Inter, sans-serif; fill: #991B1B; }
+        </style>
+        <defs>
+          <marker id="n1Br" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#D1D5DB"/></marker>
+        </defs>
+        <text class="n1bK" x="60" y="52">Without a bend:</text>
+        <rect x="60" y="70" width="170" height="44" rx="10" fill="#155E75"/>
+        <text class="n1bB" x="145" y="97" text-anchor="middle">y1 = W1·x + b1</text>
+        <line x1="230" y1="92" x2="290" y2="92" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n1Br)"/>
+        <rect x="294" y="70" width="170" height="44" rx="10" fill="#155E75"/>
+        <text class="n1bB" x="379" y="97" text-anchor="middle">y2 = W2·y1 + b2</text>
+        <line x1="464" y1="92" x2="524" y2="92" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n1Br)"/>
+        <rect x="528" y="70" width="292" height="44" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+        <text class="n1bR" x="674" y="97" text-anchor="middle">= (W2W1)·x + (W2b1+b2)</text>
+        <text class="n1bN" x="60" y="146">Substitute and expand: two layers, any number of layers, algebraically ONE linear map. Depth was a costume.</text>
+        <text class="n1bK" x="60" y="192">With the bend:</text>
+        <rect x="60" y="210" width="170" height="44" rx="10" fill="#155E75"/>
+        <text class="n1bB" x="145" y="237" text-anchor="middle">y1 = W1·x + b1</text>
+        <line x1="230" y1="232" x2="286" y2="232" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n1Br)"/>
+        <rect x="290" y="210" width="120" height="44" rx="22" fill="#F59E0B"/>
+        <text class="n1bK" x="350" y="237" text-anchor="middle">tanh(·)</text>
+        <line x1="410" y1="232" x2="466" y2="232" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n1Br)"/>
+        <rect x="470" y="210" width="170" height="44" rx="10" fill="#155E75"/>
+        <text class="n1bB" x="555" y="237" text-anchor="middle">y2 = W2·h + b2</text>
+        <rect x="664" y="210" width="156" height="44" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n1bK" x="742" y="237" text-anchor="middle">cannot collapse</text>
+        <text class="n1bN" x="60" y="290">The bend between layers is the only thing standing between "deep network" and "expensive linear regression".</text>
+        <text class="n1bN" x="60" y="312">Session 3's first demo: set hidden layers to zero and watch the boundary stay a straight line, whatever the data needs.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the three-line collapse, and the bend that prevents it</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>XOR: the tiny dataset that makes it concrete<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Four points. (0,0) and (1,1) are class A; (0,1) and (1,0) are class B. Try to separate them with one straight line - you cannot, and no weighted-sum-plus-threshold ever will, because the classes sit on the diagonals. This is XOR, the example that famously stalled neural network research after Minsky and Papert highlighted it in 1969.</p>
+        <p>One hidden layer fixes it: neuron one learns roughly "x OR y", neuron two learns roughly "x AND y", and the output learns "OR but not AND" - a bent region no single line can draw. In session 3 you will watch the live network do exactly this, and the measured numbers are already on the course map: a no-hidden-layer model scores 48.3 percent on XOR test data - a coin flip - while one hidden layer of 8 reaches 95.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Mango Lane's churn signal contains a real XOR-shaped clause: customers who are BOTH long-idle AND low-session churn at a much higher rate than either condition alone predicts. A linear scorer adds the two evidences; only a bent model can price the combination differently from the sum. Interactions are XOR wearing business clothes.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 3 ============ -->
+  <section class="section" id="part-3">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · covers the theorem, read closely</span>
+      <h2>What the universal approximation theorem promises - and refuses to</h2>
+      <span class="tag concept">6 min live</span>
+    </div>
+    <p class="lede">The most-cited justification for neural networks is also the most misquoted. Cybenko in 1989, and Hornik, Stinchcombe and White the same year, proved something real and beautiful - and narrower than almost everyone who cites it believes.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two columns: what the universal approximation theorem promises - existence of an approximating network - versus what it says nothing about: findability, sample cost, and width">
+        <style>
+          .n1cH { font: 800 13px Inter, sans-serif; fill: #fff; }
+          .n1cB { font: 400 12px Inter, sans-serif; fill: #111827; }
+          .n1cK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n1cN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <rect x="60" y="50" width="370" height="210" rx="12" fill="#155E75"/>
+        <text class="n1cH" x="80" y="82">What it promises</text>
+        <rect x="80" y="98" width="330" height="146" rx="8" fill="#ECFEFF"/>
+        <text class="n1cB" x="96" y="124">A network with ONE hidden layer and a</text>
+        <text class="n1cB" x="96" y="144">squashing activation can approximate any</text>
+        <text class="n1cB" x="96" y="164">continuous function on a compact set,</text>
+        <text class="n1cB" x="96" y="184">to any accuracy you name -</text>
+        <text class="n1cB" x="96" y="204">"provided sufficiently many hidden</text>
+        <text class="n1cB" x="96" y="224">units are available."</text>
+        <rect x="450" y="50" width="370" height="210" rx="12" fill="#F59E0B"/>
+        <text class="n1cH" x="470" y="82" fill="#111827" style="fill:#111827">What it says nothing about</text>
+        <rect x="470" y="98" width="330" height="146" rx="8" fill="#FFF7E6"/>
+        <text class="n1cB" x="486" y="124">Whether gradient descent will FIND</text>
+        <text class="n1cB" x="486" y="144">that network from your starting weights</text>
+        <text class="n1cB" x="486" y="164">How many SAMPLES you need to pin it down</text>
+        <text class="n1cB" x="486" y="184">How WIDE the layer must be - the required</text>
+        <text class="n1cB" x="486" y="204">width can grow exponentially with the</text>
+        <text class="n1cB" x="486" y="224">problem. Existence is not a training plan.</text>
+        <rect x="60" y="284" width="760" height="40" rx="10" fill="#ECFEFF"/>
+        <text class="n1cK" x="440" y="309" text-anchor="middle">A perfect network exists. The theorem hands you no map to it, no bill for it, and no deadline.</text>
+        <text class="n1cN" x="60" y="350">Session 3 makes this visible: a net with enough capacity for the spiral sits at 55 percent until the optimizer, not the theorem, arrives.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the promise and the fine print, side by side</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The exact words, and the misuse to catch<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Cybenko's 1989 result, in the paper's own framing: "arbitrary decision regions can be arbitrarily well approximated by continuous feedforward neural networks with only a single internal, hidden layer and any continuous sigmoidal nonlinearity." Hornik, Stinchcombe and White proved the same year that one hidden layer with any squashing function approximates any reasonable function "provided sufficiently many hidden units are available."</p>
+        <p>The misuse arrives in meetings as "neural networks can learn anything - it is proven." The correction is one sentence: <strong>the theorems prove a good network exists; they say nothing about whether your optimizer can find it, how much data pins it down, or whether the required width is affordable.</strong> Existence, findability, and affordability are three different claims, and only the first one was proven in 1989.</p>
+        <div class="callout tip">
+          <p><strong>Why depth, then, if one layer suffices in theory?</strong> Because "sufficiently many hidden units" can be brutally many. Depth often buys the same expressiveness with far fewer parameters, and - as session 4's residual story shows - the modern craft is largely about making that depth trainable. The theorem permits shallow; practice votes deep; neither contradicts the other.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Neurons on paper, until they are boring</h2>
+      <span class="tag demo">★ 18 min · everyone builds</span>
+    </div>
+    <p class="lede">No library tonight. You are the forward pass. The point of doing it by hand once is that session 2's backprop - the part with the fearsome reputation - becomes just this, walked backwards.</p>
+
+    <div class="steps">
+      <div class="step"><p><strong>Run the Part 1 neuron on three customers.</strong> Weights (0.04, -0.5, 0.3), bias -2, tanh. Customer A: days 62, orders 1, tickets 4. Customer B: days 8, orders 6, tickets 0. Customer C: days 40, orders 2, tickets 2. Compute the weighted sum first, then look up tanh roughly: tanh(1.2) is about 0.83, tanh(-4.7) is about -1, tanh(-0.8) is about -0.66. Two clear votes and one lukewarm one.</p></div>
+      <div class="step"><p><strong>Change ONE weight and re-run customer C.</strong> Raise the tickets weight from 0.3 to 0.8. C's sum goes from -0.8 to +0.2 - the vote flips sides. You have just felt the entire mechanism of learning: nothing changes but weights, and everything changes with them.</p></div>
+      <div class="step"><p><strong>Try to draw XOR's separating line.</strong> Plot the four points from Part 2 on paper and attempt one straight line with all A's on one side. Spend ninety honest seconds. The failure you feel is the same 48.3 percent the live network scores with zero hidden layers.</p></div>
+      <div class="step"><p><strong>Now build XOR's hidden layer by hand.</strong> Neuron h1: weights (1, 1), bias -0.5, output "fires if x + y &gt; 0.5" - roughly OR. Neuron h2: weights (1, 1), bias -1.5 - roughly AND. Output neuron: weight +1 on h1, -1 on h2, bias -0.5 - fires for OR-but-not-AND. Check all four points. You just hand-built the network that ended the 1969 objection.</p></div>
+      <div class="step"><p><strong>Count your parameters.</strong> The XOR net: 2+1 per hidden neuron, twice, plus 2+1 at the output = 9. Write that number down: in session 5 you will meet a net with 100 times the parameters of its dataset and watch what it does with the surplus.</p></div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>What to bring to session 2.</strong> Your three computed neurons. Session 2 asks the reverse question - given that customer A's true label was "stayed", how much was each of your three weights to blame for the wrong vote? - and answers it with nothing but the chain rule you already know.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 2</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li><strong>Run five more customers through your neuron</strong> - invent the numbers. Note when tanh saturates (sums beyond about 3 all output nearly 1) and keep that observation: it becomes "vanishing gradients" in session 2.</li>
+      <li><strong>Rebuild the XOR hidden layer with different numbers.</strong> Any weights that make h1 an OR-ish gate and h2 an AND-ish gate work. The lesson: many weight settings express the same function - remember this when session 5 discusses why nets have so many good solutions.</li>
+      <li><strong>Find the XOR in your own data:</strong> one pair of conditions whose combination means something different from the sum of the parts. Write it as a sentence.</li>
+      <li><strong>Read the Cybenko abstract</strong> (one paragraph) and underline what is promised and what is absent. Ten minutes, permanent immunity to the meeting misquote.</li>
+      <li><strong>Optional:</strong> skim the README of Karpathy's micrograd - about 100 lines of code implementing everything session 2 does on paper. Do not study it yet; just see how small it is.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+    <p>Clear all three and session 1 gets stamped in your passport.</p>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">1 · A colleague proposes a 10-layer network with no activation functions "for maximum depth". What does the network actually compute?</p>
+      <button class="qopt" type="button">A · A 10x more expressive model than a linear one, thanks to the depth</button>
+      <button class="qopt" type="button">B · Nothing - it cannot produce outputs without activations</button>
+      <button class="qopt" type="button">C · Exactly one linear map: the layers algebraically collapse, so it is linear regression with extra steps</button>
+      <p class="qwhy">Substitute layer by layer: W2(W1x + b1) + b2 = (W2W1)x + (W2b1 + b2) - one matrix, one bias, however many layers you stack. The nonlinearity between layers is the only thing that makes depth real. Ten linear layers cost ten layers of compute and buy one layer of model.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">2 · The universal approximation theorem is cited to claim "neural networks can learn anything". What did Cybenko and Hornik actually prove?</p>
+      <button class="qopt" type="button">A · That an approximating one-hidden-layer network EXISTS for any continuous function on a compact set - saying nothing about finding it, the data needed, or the width required</button>
+      <button class="qopt" type="button">B · That gradient descent always converges to the best network</button>
+      <button class="qopt" type="button">C · That deeper networks always approximate better than shallow ones</button>
+      <p class="qwhy">Both 1989 results are existence theorems, with Hornik's own condition attached: "provided sufficiently many hidden units are available" - and that width can be exponential. Existence, findability, and affordability are three separate claims. The live spiral demo in session 3 is the gap made visible: capacity present, optimizer not yet arrived.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">3 · Why does XOR defeat any single neuron, no matter the weights?</p>
+      <button class="qopt" type="button">A · XOR has too few data points for any model to learn</button>
+      <button class="qopt" type="button">B · A single neuron is a weighted sum with a threshold - one straight line - and XOR's classes sit on the diagonals, where no single line separates them</button>
+      <button class="qopt" type="button">C · XOR requires at least three hidden layers by a known theorem</button>
+      <p class="qwhy">One neuron draws one line. XOR needs a bent region: roughly "OR but not AND", which two hidden neurons plus an output express with 9 parameters, as you built by hand. Measured on the live engine: zero hidden layers scores 48.3 percent on XOR test data; one layer of 8 scores 95.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ OFFICIAL COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What this session teaches, and where it came from</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Cybenko 1989 + Hornik, Stinchcombe &amp; White 1989</span><span class="note">The universal approximation results with exact scope: one hidden layer, squashing activation, compact sets, existence only</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">The linear-collapse argument</span><span class="note">Standard algebra, shown in full rather than asserted</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Minsky &amp; Papert 1969 / the XOR history</span><span class="note">Named as the historical stall; the full history belongs to the field's biographies, not this course</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Karpathy, micrograd</span><span class="note">Introduced as homework reconnaissance; session 2 builds its scalar graph on paper</span></div>
+    </div>
+    <p class="mono" style="margin-top:14px">Full source map with every URL and every honesty caveat: <span class="mono">materials/official-course-map.md</span> in this repo.</p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 1 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>The unit</b><span>a = f(w·x + b). Weights are learned opinions, bias is the threshold, activation is the bend.</span></div>
+      <div class="cheat-item"><b>The collapse</b><span>Linear layers stack into one linear map. No bend, no depth - just expensive regression.</span></div>
+      <div class="cheat-item"><b>XOR in one line</b><span>Diagonal classes defeat any single line; two hidden neurons and 9 parameters solve it.</span></div>
+      <div class="cheat-item"><b>UAT, scoped</b><span>A good one-layer network EXISTS for any continuous function on a compact set. Existence is not a training plan.</span></div>
+      <div class="cheat-item"><b>The three separate claims</b><span>Exists / findable by gradient descent / affordable in width and data. 1989 proved only the first.</span></div>
+      <div class="cheat-item"><b>Count parameters</b><span>Weights plus biases. Your XOR net: 9. The data pays for every one of them.</span></div>
+    </div>
+  </section>
+
+  <div class="callout next">
+    <span class="nx-pill">Next session</span>
+    <p>Tonight you ran the forward pass by hand. Session 2 runs it backwards: the chain rule walked through a scalar graph, micrograd-style, assigning every weight its exact share of the blame for a wrong answer - plus the honest history of who actually invented backprop, which is not who the textbooks imply.</p>
+  </div>
+
+  <footer class="pagefoot">
+    <span>Session 1 of 6 · learn-deep-learning-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="../index.html">← All sessions</a> &nbsp;·&nbsp; <a href="02-backprop-by-hand.html">Next: Backprop by hand →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

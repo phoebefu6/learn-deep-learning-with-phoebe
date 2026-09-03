@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Session 6 of 6. The honest showdown: neural networks vs the tree course's tuned booster on byte-identical data - nets top out around 68-70, the booster holds 73 - plus the modality map that says where deep learning genuinely wins and why.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="When deep learning - learn deep learning with phoebe">
+<meta property="og:description" content="Session 6 of 6. Nets vs the booster on identical data, measured live - and the modality map that explains both results.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/courses/06-when-deep-learning.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="When deep learning - learn deep learning with phoebe">
+<meta name="twitter:description" content="Session 6 of 6. Nets vs the booster on identical data, measured live.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Session 6 · When deep learning - learn deep learning with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-deep-learning-with-phoebe</a> / Session 6 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Deep Learning with Phoebe · Session 6 of 6</div>
+    <h1>When <span class="accent">deep learning</span></h1>
+    <p class="sub">Five sessions built a real network and made it trainable. Tonight it faces the honest question: against the ensemble course's tuned gradient booster, on byte-identical data, who wins? The showdown runs live - the nets top out around 68 to 70 percent holdout, the booster holds 73 - and the loss is the most instructive result in either course, because the same architecture family that loses this fight owns images, speech and language outright. The finale is the modality map that explains both facts at once, without tribal loyalty to either side.</p>
+    <div class="chip-row">
+      <span class="chip level">🔴 Capstone</span>
+      <span class="chip audience">Everyone who climbed sessions 1-5</span>
+      <span class="chip audience">Pairs with the ensemble methods capstone</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-18 · The modality map</span>
+      <span class="a3" style="flex:5">18-40 · Build-along: the showdown</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>The question this course owes you</h2>
+    </div>
+    <p class="lede">You can now build, train, diagnose and tame a neural network. The last skill is knowing when NOT to reach for one - and the answer is not a vibe, because the ensemble course left a benchmark sitting on this exact dataset: a tuned gradient booster at <strong>73.0 percent holdout</strong>. Tonight your networks challenge it on the same 300 customers, same seed, same split, live.</p>
+
+    <div class="legend">
+      <span class="pill">🎫 Clear all three quiz questions for the final stamp</span>
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> A measured answer to nets-versus-trees on small tabular data - yours, not a blog's. The modality map that predicts the result and its mirror image. And the one-paragraph verdict you can deliver in any architecture meeting without joining a tribe.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why losing tonight is the point<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A deep learning course that only showed you deep learning winning would be an advertisement. The research is unambiguous about where the wins live: Grinsztajn and colleagues showed tree-based models "remain state-of-the-art on medium-sized data (~10K samples)" on typical tables, and Shwartz-Ziv and Armon titled their cross-benchmark study "Tabular data: Deep learning is not all you need". Two hundred training rows of churn is the trees' home ground, and tonight's showdown confirms it with your own clicks.</p>
+        <p>The same evidence base says the mirror image: on images, speech and language, deep learning did not just win - it ended the previous field. The skill is holding both results and knowing WHY they differ, which is what the modality map is for.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the modality map</span>
+      <h2>Inductive bias meets data structure</h2>
+      <span class="tag concept">8 min live</span>
+    </div>
+    <p class="lede">Why do the same networks that lose tonight own vision and language? Because architectures carry promises about structure, and the promise either matches the data or it does not. That single idea organizes the whole map.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The modality map: images, audio and text carry structure that matches deep architectures' built-in promises, while tabular data's structure matches trees">
+        <style>
+          .n6aH { font: 800 13px Inter, sans-serif; fill: #fff; }
+          .n6aB { font: 400 12px Inter, sans-serif; fill: #111827; }
+          .n6aK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n6aN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <rect x="60" y="50" width="370" height="240" rx="12" fill="#155E75"/>
+        <text class="n6aH" x="80" y="82">Deep learning's home ground</text>
+        <rect x="80" y="98" width="330" height="176" rx="8" fill="#ECFEFF"/>
+        <text class="n6aK" x="96" y="124">Images: nearby pixels relate</text>
+        <text class="n6aB" x="96" y="142">convolution promises exactly that (s4)</text>
+        <text class="n6aK" x="96" y="168">Audio and text: order carries meaning</text>
+        <text class="n6aB" x="96" y="186">sequence models promise exactly that</text>
+        <text class="n6aK" x="96" y="212">All three: raw signal, no ready features</text>
+        <text class="n6aB" x="96" y="230">hidden layers LEARN the representation -</text>
+        <text class="n6aB" x="96" y="248">the 1986 pitch, industrialized</text>
+        <rect x="450" y="50" width="370" height="240" rx="12" fill="#F59E0B"/>
+        <text class="n6aH" x="470" y="82" fill="#111827" style="fill:#111827">The trees' home ground</text>
+        <rect x="470" y="98" width="330" height="176" rx="8" fill="#FFF7E6"/>
+        <text class="n6aK" x="486" y="124">Columns already MEAN something</text>
+        <text class="n6aB" x="486" y="142">orientation matters; axis cuts fit (s6 of trees)</text>
+        <text class="n6aK" x="486" y="168">Junk columns are normal</text>
+        <text class="n6aB" x="486" y="186">trees ignore them free; nets must learn to</text>
+        <text class="n6aK" x="486" y="212">Truth is steppy, not smooth</text>
+        <text class="n6aB" x="486" y="230">nets are biased toward smooth solutions -</text>
+        <text class="n6aB" x="486" y="248">Grinsztajn's three challenges, verbatim</text>
+        <rect x="60" y="314" width="760" height="42" rx="10" fill="#ECFEFF"/>
+        <text class="n6aK" x="440" y="340" text-anchor="middle">One rule covers the map: reach for the architecture whose built-in promise matches the data's actual structure.</text>
+        <text class="n6aN" x="60" y="386">Raw perceptual signal: the promise-makers win. A table of business columns: the promise is wrong, and honesty about that is cheap.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the map: architectural promises versus data structure</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The day the map became obvious: AlexNet, quoted precisely<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The clearest historical evidence for the left column is 2012. Krizhevsky, Sutskever and Hinton's ImageNet entry - a deep convolutional network trained "between five and six days on two GTX 580 3GB GPUs" - achieved, in the paper's own words, "a winning top-5 test error rate of 15.3%, compared to 26.2% achieved by the second-best entry".</p>
+        <p>Two precision notes that keep the story honest: the 15.3 belonged to their multi-network ensemble entry, with a single network at 18.2 on validation - so say "their entry", not "the network". And the gap is over ten points, about 40 percent relative - dramatic enough without the "halved the error" inflation it usually gets. The runner-up was the best of classical hand-engineered features; the winner learned its features from pixels. The left column of the map, decided in one table.</p>
+        <div class="callout tip">
+          <p><strong>The representation thread, tied off.</strong> Session 2 quoted the 1986 claim that hidden units "come to represent important features of the task domain". AlexNet is that sentence at industrial scale, and session 4's embeddings are it as a product. Deep learning's real product was never predictions - it is learned representations, which is precisely what a six-column table does not need.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Where the boundary blurs, honestly<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Scale moves the line.</strong> Grinsztajn's scope is explicit: medium-sized, around 10K samples. With millions of rows or heavy pretraining, the tabular gap narrows - the claim is scoped, not eternal.</li>
+          <li><strong>Hybrids are normal.</strong> The 2024 competition record (per the ensemble course's sources) includes gradient-booster-plus-network stacks among winners; the map picks the LEAD architecture, not a religion.</li>
+          <li><strong>Foundation models are probing the right column.</strong> The ensemble capstone covers TabPFN's honest two-sided verdict; it applies unchanged here, and it is that course's story to tell.</li>
+        </ul>
+        <p>The disciplined position: the map gives the default; measurement on your own data - tonight's method - settles every specific case.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>The showdown, live</h2>
+      <span class="tag demo">★ 22 min · everyone builds</span>
+    </div>
+    <p class="lede">Four networks against the booster's benchmark. The data generator below is copied byte for byte from the ensemble course's engine - same seed, same 300 customers, same 200/100 split - so this is the rare model comparison with literally zero data excuses. Every row trains its network live when you press run.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Expected showdown results: logistic 64, small MLP 65, medium MLP 60, large overparameterized MLP 68, against the booster benchmark at 73">
+        <style>
+          .n6bL { font: 600 11px Inter, sans-serif; fill: #111827; }
+          .n6bV { font: 800 12px Inter, sans-serif; fill: #111827; }
+          .n6bW { font: 800 11px Inter, sans-serif; fill: #fff; }
+          .n6bN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+          .n6bT { font: 700 11px Inter, sans-serif; fill: #6B7280; letter-spacing: .05em; }
+        </style>
+        <text class="n6bT" x="60" y="40">THE EXPECTED FINISH ORDER, HOLDOUT % · IF YOUR RUN DIFFERS, RE-CHECK WHICH ROW YOU PRESSED</text>
+        <text class="n6bL" x="270" y="84" text-anchor="end">logistic regression</text>
+        <rect x="282" y="68" width="236" height="22" rx="5" fill="#A5F3FC"/>
+        <text class="n6bV" x="526" y="84">64.0 · the linear floor</text>
+        <text class="n6bL" x="270" y="126" text-anchor="end">MLP 1x8</text>
+        <rect x="282" y="110" width="240" height="22" rx="5" fill="#06B6D4"/>
+        <text class="n6bV" x="530" y="126">65.0 · one point of bend</text>
+        <text class="n6bL" x="270" y="168" text-anchor="end">MLP 2x16</text>
+        <rect x="282" y="152" width="220" height="22" rx="5" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+        <text class="n6bV" x="510" y="168" fill="#991B1B" style="fill:#991B1B">60.0 · train 100: memorized 200 rows</text>
+        <text class="n6bL" x="270" y="210" text-anchor="end">MLP 3x32, overparam</text>
+        <rect x="282" y="194" width="252" height="22" rx="5" fill="#0E7490"/>
+        <text class="n6bW" x="294" y="210">68-70 · biggest net, best net</text>
+        <text class="n6bL" x="270" y="252" text-anchor="end">◆ tuned booster (bench)</text>
+        <rect x="282" y="236" width="272" height="22" rx="5" fill="#155E75"/>
+        <text class="n6bW" x="294" y="252">73.0 · the trees hold the table</text>
+        <text class="n6bN" x="60" y="288">Same 100 held-out customers judge every row. The 2x16 dip and the 3x32 recovery are both real, and both teach.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the expected order, so your live run has a reference</figcaption>
+    </figure>
+
+    <div id="dl-tabular"></div>
+
+    <div class="steps">
+      <div class="step"><p><strong>Run logistic regression first: 67.5 train, 64 holdout.</strong> No hidden layer, so this is the linear floor - and note how respectable it is. Six meaningful columns take a linear model a long way, which is already the right column of the modality map speaking.</p></div>
+      <div class="step"><p><strong>Run the 1x8: 65 holdout.</strong> One hidden layer buys one point over linear. The bend that cracked XOR wide open barely matters here, because this table's truth is mostly additive with a couple of steps - structure the trees exploit natively.</p></div>
+      <div class="step"><p><strong>Run the 2x16 and read both numbers: train 100, holdout 60.</strong> The net memorized 200 rows perfectly and got WORSE than the linear floor on unseen customers - session 5's overfit diagnosis, live. On 200 noisy rows, 600-plus parameters of smooth flexibility is a liability.</p></div>
+      <div class="step"><p><strong>Run the 3x32 overparameterized, trained long: 68 to 70, depending on your browser.</strong> Bigger than the memorizer, and BETTER - the strongest net on the board; session 5's double-descent teaser is the reading. The range is itself a lesson: 1,500 epochs of a chaotic training run amplify the tiny differences between browsers' floating-point math libraries, so the same seeded code lands a point or two apart across engines. Determinism has layers. And on every engine, it sits under the booster.</p></div>
+      <div class="step"><p><strong>Now read the bench row it all answers to: 100 / 73.0.</strong> The ensemble course's tuned booster, on this data. Best net 68-70, booster 73 - Grinsztajn's finding, reproduced on your own screen: trees remain state of the art on typical medium-sized tabular data. Write both numbers down; they are your evidence, not anyone's slide.</p></div>
+      <div class="step"><p><strong>Deliver the verdict paragraph out loud, once:</strong> "On our small table the tuned booster wins 73 to 68-70, consistent with the published benchmarks. The same network family wins outright on images and language because there its architectural promises match the data. We route by structure, and we re-measure when the data changes." That paragraph, with your numbers in it, is the course.</p></div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>What the showdown does NOT say.</strong> It does not say nets are weak - the 3x32 losing by five on 200 rows of churn is the same family that ended classical computer vision. It says architecture is a promise about structure, and promises are checked against data, not against enthusiasm.</p>
+    </div>
+
+    <div class="scorecard" data-title="Ship the judgment - the strict gate" data-foot="The final check. A no on any row is the work remaining before your next architecture opinion goes public.">
+      <div class="sc-row"><div class="sc-q">You ran the full showdown yourself and wrote down both headline numbers<em>Your 3x32 number versus 73, from your own browser, not from a blog.</em></div></div>
+      <div class="sc-row"><div class="sc-q">You can state the modality map's one rule and apply it to a new dataset in a minute<em>Match the architecture's promise to the data's structure.</em></div></div>
+      <div class="sc-row"><div class="sc-q">You can explain the 2x16's collapse AND the 3x32's recovery<em>Memorization on 200 rows; the overparameterized regime differs - and both still lose to the trees here.</em></div></div>
+      <div class="sc-row"><div class="sc-q">Your AlexNet story survives a pedant<em>Their ENTRY hit 15.3 top-5 vs 26.2; single net 18.2 val; two GTX 580s, five to six days.</em></div></div>
+      <div class="sc-row"><div class="sc-q">You know which claims are scoped and can recite the scope<em>Trees win on TYPICAL, MEDIUM-SIZED (~10K) tabular data - and scale moves the line.</em></div></div>
+    </div>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the standing decision</span>
+      <h2>The default, the challenger, the re-measure</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">The showdown method - shared data, live fits, written numbers - is worth more than tonight's result, because results expire and methods do not. Three standing rules turn it into practice.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three standing rules: default by modality, challenge on your own data, re-measure when data or scale changes">
+        <style>
+          .n6cH { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n6cB { font: 400 11px Inter, sans-serif; fill: #A5F3FC; }
+          .n6cY { font: 400 11px Inter, sans-serif; fill: #111827; }
+          .n6cK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n6cN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <rect x="60" y="60" width="238" height="140" rx="12" fill="#155E75"/>
+        <text class="n6cH" x="179" y="94" text-anchor="middle">1 · Default by modality</text>
+        <text class="n6cB" x="179" y="122" text-anchor="middle">perceptual signal: deep nets</text>
+        <text class="n6cB" x="179" y="140" text-anchor="middle">business tables: trees</text>
+        <text class="n6cB" x="179" y="158" text-anchor="middle">the map picks the opener</text>
+        <rect x="322" y="60" width="238" height="140" rx="12" fill="#0E7490"/>
+        <text class="n6cH" x="441" y="94" text-anchor="middle">2 · Challenge on YOUR data</text>
+        <text class="n6cB" x="441" y="122" text-anchor="middle">shared split, fixed seed,</text>
+        <text class="n6cB" x="441" y="140" text-anchor="middle">both families, numbers written</text>
+        <text class="n6cB" x="441" y="158" text-anchor="middle">an afternoon, settles a year</text>
+        <rect x="584" y="60" width="238" height="140" rx="12" fill="#F59E0B"/>
+        <text class="n6cH" x="703" y="94" text-anchor="middle" fill="#111827" style="fill:#111827">3 · Re-measure on change</text>
+        <text class="n6cY" x="703" y="122" text-anchor="middle">10x more rows, new features,</text>
+        <text class="n6cY" x="703" y="140" text-anchor="middle">pretraining available -</text>
+        <text class="n6cY" x="703" y="158" text-anchor="middle">the boundary is scoped, so redo it</text>
+        <rect x="60" y="224" width="760" height="40" rx="10" fill="#ECFEFF"/>
+        <text class="n6cK" x="440" y="249" text-anchor="middle">No tribal loyalty survives contact with rule 2. That is the rule's entire job.</text>
+        <text class="n6cN" x="60" y="292">Tonight was rule 2 executed once. The habit is executing it every time the stakes justify an afternoon.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the three rules that outlive tonight's numbers</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The arc, closed<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Session 1: three numbers and a squash, and the theorem read closely. Session 2: every weight got its blame, and the history got its correction. Session 3: the loop closed and the spiral separated capacity from optimization. Session 4: architectures as promises - convolution's locality, residuals making depth trainable, embeddings as the product. Session 5: the net tamed when it memorized. Tonight: the promise checked against a table, and the honest loss recorded next to the honest reasons.</p>
+        <p>You built the thing, you know why it wins where it wins, and you measured where it does not. That combination - construction plus calibration - is rarer than either half, and it is what this course was for.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>After the course</h2>
+      <span class="tag exercise">45 min</span>
+    </div>
+    <ol>
+      <li><strong>Run the showdown on real data.</strong> One labeled table from your work, 80/20 split, fixed seed: logistic, a small MLP, a tuned gradient booster (the ensemble course's homework built one). Write the three numbers and the winner.</li>
+      <li><strong>Write your modality inventory:</strong> the data types your team actually handles, each mapped to its default architecture with one sentence of why. This document ends most future architecture debates before they start.</li>
+      <li><strong>Rebuild tonight's verdict paragraph with YOUR numbers</strong> from item 1, and deliver it to a colleague. If it survives their questions, you own it.</li>
+      <li><strong>Watch one Karpathy Zero-to-Hero lecture</strong> - the micrograd episode. You will recognize everything, which is the point: you built it on paper first.</li>
+      <li><strong>Set the re-measure trigger:</strong> a calendar note at the next 10x data milestone or new-modality project, quoting rule 3. The boundary is scoped; keep it measured.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+    <p>Clear all three for the final passport stamp.</p>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · The 2x16 network hit train 100 but holdout 60 - below even logistic regression - while the bigger 3x32 recovered to 68. What is the honest reading?</p>
+      <button class="qopt" type="button">A · The 2x16 result must be a bug, since more parameters always mean more overfitting</button>
+      <button class="qopt" type="button">B · On 200 noisy rows the 2x16 memorized and paid for it; the heavily overparameterized 3x32 behaves differently - consistent with the double-descent literature - yet still loses to the booster on every engine</button>
+      <button class="qopt" type="button">C · The 3x32 proves that with enough size, nets beat trees on any data</button>
+      <p class="qwhy">Both results are real and reproducible - the seed is fixed. The dip-then-recovery with growing size is the shape Belkin and colleagues named; the ceiling below the booster is the shape Grinsztajn measured. Two famous findings, one leaderboard, your browser.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">2 · What makes tonight's nets-versus-trees comparison unusually trustworthy?</p>
+      <button class="qopt" type="button">A · Byte-identical data: the same seeded generator, same 300 customers, same 200/100 split as the ensemble course - zero data excuses on either side</button>
+      <button class="qopt" type="button">B · It used the largest available models on both sides</button>
+      <button class="qopt" type="button">C · It averaged results from many different random datasets</button>
+      <p class="qwhy">Most model-war anecdotes compare different data, different splits, different tuning effort. Tonight removed every excuse except the models: shared generator, shared split, fixed seeds, tuned representatives on both sides. Small, yes - the scope caveat stands - but clean, and clean beats big for teaching what a fair comparison even looks like.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">3 · A startup pitches you: "our churn model uses deep learning, the same technology as ChatGPT, so it beats classical methods." Your course-grade response?</p>
+      <button class="qopt" type="button">A · Agree - shared technology implies shared performance</button>
+      <button class="qopt" type="button">B · Dismiss deep learning entirely, since trees won tonight</button>
+      <button class="qopt" type="button">C · Ask what the data's structure is: on typical tabular churn data the published evidence and tonight's measurement favor tuned trees, while deep learning's wins live where its architectural promises match the signal - so show the benchmark on data like ours</button>
+      <p class="qwhy">Technology pedigree is not performance. The modality map plus rule 2 turns the pitch into a checkable claim: shared split, both families, written numbers. If their net genuinely beats a tuned booster on churn-shaped data, excellent - that is a measurement, and measurements outrank both slogans and tonight's result.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ OFFICIAL COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What this session teaches, and where it came from</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Grinsztajn et al. 2022</span><span class="note">The scoped state-of-the-art claim and the three challenges, reproduced live on shared data</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Shwartz-Ziv &amp; Armon 2022</span><span class="note">The title claim, abstract-level - deep learning is not all you need on tables</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">AlexNet, NIPS 2012</span><span class="note">15.3 vs 26.2 quoted from the PDF, with the ensemble-entry and stale-abstract precision traps carried</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">The showdown's measured canon</span><span class="note">64 / 65 / 60 / 68-70 vs the booster's 73, re-fitted live in this browser; the deep run's 68-70 range is cross-engine float variation, taught as such</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">TabPFN and tabular foundation models</span><span class="note">The ensemble capstone owns that verdict; it applies here unchanged and is not re-taught</span></div>
+    </div>
+    <p class="mono" style="margin-top:14px">Full source map with every URL and every honesty caveat: <span class="mono">materials/official-course-map.md</span> in this repo.</p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 6 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>The showdown</b><span>Logistic 64, 1x8 65, 2x16 60, 3x32 68-70 - booster 73. Byte-identical data, zero excuses.</span></div>
+      <div class="cheat-item"><b>The map's one rule</b><span>Reach for the architecture whose built-in promise matches the data's structure.</span></div>
+      <div class="cheat-item"><b>AlexNet, precisely</b><span>Their entry: 15.3 top-5 vs 26.2 runner-up; single net 18.2 val; two GTX 580s, five to six days.</span></div>
+      <div class="cheat-item"><b>The dip and the recovery</b><span>2x16 memorizes and sinks; overparameterized 3x32 recovers - and still loses here. Both lessons are real.</span></div>
+      <div class="cheat-item"><b>Every claim, scoped</b><span>Trees win on typical, medium-sized (~10K) tabular. Scale moves lines - re-measure on change.</span></div>
+      <div class="cheat-item"><b>The three rules</b><span>Default by modality. Challenge on your own data. Re-measure when the data changes.</span></div>
+    </div>
+  </section>
+
+  <div class="callout next">
+    <span class="nx-pill">The arc, closed</span>
+    <p>From three numbers and a squash to a measured verdict against the strongest tabular baseline in the estate: you built the network, trained it for real, tamed it, and then told the truth about it. The paired course on the other side of tonight's bench row runs the same experiment from the trees' corner - between the two of them, the argument that consumes most data teams is, for you, just an afternoon's measurement.</p>
+  </div>
+
+  <footer class="pagefoot">
+    <span>Session 6 of 6 · learn-deep-learning-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="05-taming-the-net.html">← Prev: Taming the net</a> &nbsp;·&nbsp; <a href="../index.html">All sessions</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+<script src="../assets/dl-live.js?v=1"></script>
+</body>
+</html>

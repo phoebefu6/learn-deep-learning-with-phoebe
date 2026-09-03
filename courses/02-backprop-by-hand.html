@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Session 2 of 6. Backprop by hand: the chain rule walked in reverse through a scalar graph, micrograd-style - every weight gets its exact share of the blame, plus who actually invented backprop (not who the textbooks imply).">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Backprop by hand - learn deep learning with phoebe">
+<meta property="og:description" content="Session 2 of 6. The chain rule walked in reverse - and the honest history of who invented backprop.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/courses/02-backprop-by-hand.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Backprop by hand - learn deep learning with phoebe">
+<meta name="twitter:description" content="Session 2 of 6. The chain rule walked in reverse - and the honest history of who invented backprop.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Session 2 · Backprop by hand - learn deep learning with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-deep-learning-with-phoebe</a> / Session 2 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Deep Learning with Phoebe · Session 2 of 6</div>
+    <h1>Backprop <span class="accent">by hand</span></h1>
+    <p class="sub">Session 1's neuron voted 0.83 - churn-ish - on a customer who stayed. Wrong. Tonight you answer the only question that matters after a wrong answer: how much was each weight to blame? The answer is the chain rule, walked backwards through a graph of tiny operations, each one knowing nothing but its own local derivative. You will compute every gradient with a pencil, take one gradient step, watch it overshoot spectacularly, and earn - by hand - the reason every serious pipeline standardizes its inputs. No library. You are the backward pass.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Medium</span>
+      <span class="chip audience">Builders - you ran the forward pass in session 1</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-20 · The chain rule, walked in reverse</span>
+      <span class="a3" style="flex:5">20-40 · Build-along: assign the blame</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where session 1 left you</h2>
+    </div>
+    <p class="lede">Customer A - 62 idle days, 1 order, 4 tickets - went through your paper neuron and came out at 0.83: a strong churn vote. Then the truth arrived: A stayed. The network was wrong, and "the network" is nothing but weights, so some weights are more at fault than others. Tonight computes exactly how much, for every weight, in one backward sweep. That sweep has a fearsome reputation and a five-letter name; by minute 40 it will be the same arithmetic you did last week, read right to left.</p>
+
+    <div class="legend">
+      <span class="pill">🎫 Clear all three quiz questions to stamp your passport</span>
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> Every gradient of a real neuron computed by hand - and reconciled, number by number, with what the numbers should be. The visceral reason big raw inputs hijack learning, which is the reason for standardization. And the honest history: who actually invented backprop, decades before the paper everyone cites.</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The question backprop answers<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>For one wrong prediction, backprop computes <strong>d(loss)/d(weight) for every weight in the network - all in one backward sweep</strong>. Not by wiggling each weight and re-running the forward pass (that would cost one full pass per weight); by walking the chain rule from the loss back to the inputs, once. The chain rule is the whole trick. There is no other idea in it.</p>
+        <p>Each gradient is a blame number: "if this weight rose a little, the loss would rise this much." Training (session 3) is just: compute the blame, nudge every weight against it, repeat. Tonight is the compute-the-blame half, done slowly enough to own it.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>This is also the skill that survives the tooling. When a production model trains badly, the symptoms are gradient-shaped: exploding steps, dead units, one feature dominating. Everyone can call .backward(); the person who has computed a gradient by hand is the one who can read what it is saying.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Four words tonight leans on<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Gradient</strong> - d(loss)/d(weight): how much the loss moves per tiny move of that weight. Sign is direction, magnitude is urgency.</li>
+          <li><strong>Local derivative</strong> - what one node knows about itself: how its output moves per tiny move of one input. A multiply node, an add node, a tanh node each have one, and none knows anything about the rest of the graph.</li>
+          <li><strong>Chain rule</strong> - derivatives along a path multiply. The global gradient of a weight is the product of every local derivative between it and the loss.</li>
+          <li><strong>Delta</strong> - the error signal at the output, p - y for our loss setup. Every weight's gradient tonight is delta times something.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the scalar graph</span>
+      <h2>A graph of tiny operations, micrograd-style</h2>
+      <span class="tag concept">7 min live</span>
+    </div>
+    <p class="lede">Redraw the neuron not as a diagram of a "unit" but as what the arithmetic actually was: multiplies feeding an add feeding a tanh feeding a loss. Every node is trivial. That triviality is the design: a node only ever needs to know its own local derivative, and the backward pass multiplies those local derivatives along the path from the loss to each weight.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The session 1 neuron redrawn as a computation graph: three multiply nodes feed an add node, then tanh, then the loss; backward arrows underneath carry each node's local derivative">
+        <style>
+          .n2aB { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n2aK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n2aA { font: 700 11px Inter, sans-serif; fill: #92400E; }
+          .n2aS { font: 400 11px Inter, sans-serif; fill: #6B7280; }
+          .n2aN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <defs>
+          <marker id="n2Ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#D1D5DB"/></marker>
+          <marker id="n2Ab" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#F59E0B"/></marker>
+        </defs>
+        <rect x="40" y="50" width="120" height="36" rx="9" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n2aK" x="100" y="73" text-anchor="middle">days = 62</text>
+        <rect x="40" y="120" width="120" height="36" rx="9" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n2aK" x="100" y="143" text-anchor="middle">orders = 1</text>
+        <rect x="40" y="190" width="120" height="36" rx="9" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n2aK" x="100" y="213" text-anchor="middle">tickets = 4</text>
+        <line x1="160" y1="68" x2="216" y2="68" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n2Ar)"/>
+        <line x1="160" y1="138" x2="216" y2="138" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n2Ar)"/>
+        <line x1="160" y1="208" x2="216" y2="208" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n2Ar)"/>
+        <rect x="220" y="50" width="140" height="36" rx="9" fill="#0E7490"/>
+        <text class="n2aB" x="290" y="73" text-anchor="middle">x 0.04 = 2.48</text>
+        <rect x="220" y="120" width="140" height="36" rx="9" fill="#0E7490"/>
+        <text class="n2aB" x="290" y="143" text-anchor="middle">x -0.5 = -0.5</text>
+        <rect x="220" y="190" width="140" height="36" rx="9" fill="#0E7490"/>
+        <text class="n2aB" x="290" y="213" text-anchor="middle">x 0.3 = 1.2</text>
+        <rect x="220" y="260" width="140" height="36" rx="9" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n2aK" x="290" y="283" text-anchor="middle">bias b = -2</text>
+        <line x1="360" y1="68" x2="436" y2="126" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n2Ar)"/>
+        <line x1="360" y1="138" x2="436" y2="140" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n2Ar)"/>
+        <line x1="360" y1="208" x2="436" y2="154" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n2Ar)"/>
+        <line x1="360" y1="278" x2="436" y2="164" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n2Ar)"/>
+        <rect x="440" y="118" width="130" height="52" rx="12" fill="#155E75"/>
+        <text class="n2aB" x="505" y="140" text-anchor="middle">+ (add)</text>
+        <text class="n2aB" x="505" y="158" text-anchor="middle" style="font-weight:400">z = 1.18</text>
+        <line x1="570" y1="144" x2="626" y2="144" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n2Ar)"/>
+        <rect x="630" y="118" width="120" height="52" rx="12" fill="#F59E0B"/>
+        <text class="n2aK" x="690" y="140" text-anchor="middle">tanh</text>
+        <text class="n2aK" x="690" y="158" text-anchor="middle">a = 0.83</text>
+        <line x1="750" y1="144" x2="796" y2="144" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n2Ar)"/>
+        <rect x="800" y="118" width="60" height="52" rx="12" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+        <text class="n2aK" x="830" y="140" text-anchor="middle" fill="#991B1B" style="fill:#991B1B">loss</text>
+        <text class="n2aK" x="830" y="158" text-anchor="middle" fill="#991B1B" style="fill:#991B1B">y = 0</text>
+        <line x1="800" y1="330" x2="640" y2="330" stroke="#F59E0B" stroke-width="2" marker-end="url(#n2Ab)"/>
+        <text class="n2aA" x="720" y="320" text-anchor="middle">output: delta = p - y</text>
+        <line x1="620" y1="330" x2="460" y2="330" stroke="#F59E0B" stroke-width="2" marker-end="url(#n2Ab)"/>
+        <text class="n2aA" x="540" y="320" text-anchor="middle">tanh: x (1 - tanh²)</text>
+        <line x1="440" y1="330" x2="280" y2="330" stroke="#F59E0B" stroke-width="2" marker-end="url(#n2Ab)"/>
+        <text class="n2aA" x="360" y="320" text-anchor="middle">add: x 1 (unchanged)</text>
+        <line x1="260" y1="330" x2="100" y2="330" stroke="#F59E0B" stroke-width="2" marker-end="url(#n2Ab)"/>
+        <text class="n2aA" x="180" y="320" text-anchor="middle">multiply: x other input</text>
+        <text class="n2aS" x="40" y="360">Backward pass = walk right to left, multiplying each node's LOCAL derivative into the running gradient.</text>
+        <text class="n2aN" x="40" y="392">Forward (grey) computes the numbers. Backward (amber) computes the blame. Same graph, opposite direction.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - session 1's neuron redrawn as a computation graph, with the backward lane underneath</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Each node's local derivative - the complete toolbox<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Tonight's graph has exactly three node types, and their local derivatives are the entire toolbox:</p>
+        <table class="clean">
+          <tr><th>Node</th><th>Local derivative</th><th>In words</th></tr>
+          <tr><td><strong>add</strong></td><td>1, toward every input</td><td>The add node is a gradient distributor: whatever blame arrives, it hands on unchanged to each thing it summed - including the bias.</td></tr>
+          <tr><td><strong>multiply</strong> (w · x)</td><td>d/dw = x, d/dx = w</td><td>Blame toward the weight is the OTHER factor. This one line is why input scale will dominate Part 2.</td></tr>
+          <tr><td><strong>tanh</strong></td><td>1 - tanh(z)²</td><td>At z = 1.18: 1 - 0.83² ≈ 0.32. Near z = 0 it is almost 1 (learns fast); beyond |z| = 3 it is under 0.01 (Part 3's saturation story).</td></tr>
+        </table>
+        <p>And one gift at the output: the course engine uses a <strong>sigmoid output with binary cross-entropy loss</strong>, and that pairing simplifies famously - the combined derivative of loss-through-sigmoid collapses to <strong>delta = p - y</strong>, the prediction minus the truth. We state that as the standard simplification rather than deriving it; the derivation is a satisfying ten minutes of algebra you can do once and never need again.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Why this is called reverse-mode, and why 100 lines suffice<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Karpathy's micrograd is the cleanest statement that this is ALL there is. Its README, verbatim:</p>
+        <div class="prompt-box good"><span class="label">micrograd README - the whole engine in one sentence</span>A tiny Autograd engine... Implements backpropagation (reverse-mode autodiff) over a dynamically built DAG</div>
+        <p>The engine is about 100 lines and scalar-valued - every value in the graph is a single number, exactly like your pencil work tonight. "Reverse-mode" names the direction: one sweep from the loss backwards touches every node once and yields the gradient for ALL weights simultaneously. Forward-mode would need one sweep per weight - fine for 4 parameters, absurd for 70 billion. Reverse-mode's one-sweep-for-everything is the reason training large networks is possible at all.</p>
+        <p>PyTorch's autograd is this same idea, industrialized: tensors instead of scalars, thousands of node types instead of three. Session 3 meets it as one line - loss.backward() - and you will know precisely what that line does, because tonight you were that line.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the full pass, by hand</span>
+      <h2>One complete backward pass on customer A</h2>
+      <span class="tag concept">6 min live</span>
+    </div>
+    <p class="lede">Same numbers as session 1: inputs (62, 1, 4), weights (0.04, -0.5, 0.3), bias -2, so z = 1.18 and a = tanh(1.18) ≈ 0.83. One honest simplification before we compute: the single-neuron demo wires the tanh output straight into a p-like churn score, so we can use the clean output rule delta = p - y directly. With the true label y = 0 (A stayed), <strong>delta ≈ 0.83</strong>. In the full engine the hidden layers are tanh and only the output is a true sigmoid; the arithmetic pattern you are about to do is identical there.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Blame flowing backward through the graph: delta 0.83 at the output becomes gradient 51.5 for the days weight, 0.83 for the orders weight, 3.3 for the tickets weight, and 0.83 for the bias">
+        <style>
+          .n2bB { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n2bK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n2bR { font: 800 13px Inter, sans-serif; fill: #991B1B; }
+          .n2bA { font: 700 11px Inter, sans-serif; fill: #92400E; }
+          .n2bS { font: 400 11px Inter, sans-serif; fill: #6B7280; }
+          .n2bN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <defs>
+          <marker id="n2Bb" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#F59E0B"/></marker>
+        </defs>
+        <rect x="680" y="60" width="160" height="64" rx="12" fill="#155E75"/>
+        <text class="n2bB" x="760" y="86" text-anchor="middle">at the output</text>
+        <text class="n2bB" x="760" y="106" text-anchor="middle" style="font-weight:400">delta = 0.83 - 0</text>
+        <line x1="680" y1="92" x2="500" y2="92" stroke="#F59E0B" stroke-width="2.5" marker-end="url(#n2Bb)"/>
+        <text class="n2bA" x="590" y="82" text-anchor="middle">blame flows left</text>
+        <rect x="330" y="60" width="166" height="64" rx="12" fill="#F59E0B"/>
+        <text class="n2bK" x="413" y="86" text-anchor="middle">grad(w) =</text>
+        <text class="n2bK" x="413" y="106" text-anchor="middle">delta x input</text>
+        <line x1="330" y1="76" x2="230" y2="76" stroke="#F59E0B" stroke-width="2" marker-end="url(#n2Bb)"/>
+        <line x1="330" y1="92" x2="230" y2="150" stroke="#F59E0B" stroke-width="2" marker-end="url(#n2Bb)"/>
+        <line x1="330" y1="108" x2="230" y2="224" stroke="#F59E0B" stroke-width="2" marker-end="url(#n2Bb)"/>
+        <line x1="330" y1="118" x2="230" y2="298" stroke="#F59E0B" stroke-width="2" marker-end="url(#n2Bb)"/>
+        <rect x="40" y="52" width="186" height="48" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+        <text class="n2bR" x="133" y="72" text-anchor="middle">w_days: 0.83 x 62</text>
+        <text class="n2bR" x="133" y="90" text-anchor="middle">= 51.5 (!)</text>
+        <rect x="40" y="126" width="186" height="48" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n2bK" x="133" y="146" text-anchor="middle">w_orders: 0.83 x 1</text>
+        <text class="n2bK" x="133" y="164" text-anchor="middle">= 0.83</text>
+        <rect x="40" y="200" width="186" height="48" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n2bK" x="133" y="220" text-anchor="middle">w_tickets: 0.83 x 4</text>
+        <text class="n2bK" x="133" y="238" text-anchor="middle">= 3.3</text>
+        <rect x="40" y="274" width="186" height="48" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n2bK" x="133" y="294" text-anchor="middle">bias: 0.83 x 1</text>
+        <text class="n2bK" x="133" y="312" text-anchor="middle">= 0.83</text>
+        <rect x="560" y="180" width="280" height="120" rx="12" fill="#FFF7E6" stroke="#F59E0B" stroke-width="1.5"/>
+        <text class="n2bA" x="580" y="208">The multiply rule in action:</text>
+        <text class="n2bS" x="580" y="230">blame toward a weight = delta x the</text>
+        <text class="n2bS" x="580" y="248">INPUT that flowed through it. days=62</text>
+        <text class="n2bS" x="580" y="266">is 62x orders=1, so its weight grabs</text>
+        <text class="n2bS" x="580" y="284">62x the gradient. Scale = power.</text>
+        <text class="n2bN" x="40" y="358">Four gradients, one sweep. Three are polite; one is 51.5 - and nothing about the DATA says days matter 62x more.</text>
+        <text class="n2bN" x="40" y="382">That giant number is an artifact of raw input scale. The build-along fixes it twice: small steps, then z-scores.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the blame flowing backward, with all four computed gradients on the arrows</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Lesson one: blame scales with the input<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Look at the three weight gradients: <strong>51.5, 0.83, 3.3</strong>. The ratios are exactly the ratios of the raw inputs (62 : 1 : 4), because grad(w) = delta x input and delta is shared. The days weight did not earn 62x the blame by being 62x more wrong - it grabbed it because "days" happens to be measured in a unit that produces big numbers. Measure days in years and its gradient shrinks 365-fold with zero change in meaning.</p>
+        <p>This is WHY standardization matters, stated as calculus rather than folklore: features on wild scales get wildly unequal gradients, so gradient descent races along the big-scale weights and crawls along the rest. The course engine standardizes every feature before training - session 6 shows the machinery - and after tonight you know exactly what failure it is preventing.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Lesson two: one step at lr 0.01, and the crash<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The update rule is <strong>w -= lr x grad</strong>. Apply it once with lr = 0.01:</p>
+        <table class="clean">
+          <tr><th>Parameter</th><th>Old</th><th>Gradient</th><th>New (old - 0.01 x grad)</th></tr>
+          <tr><td>w_days</td><td>0.04</td><td>51.5</td><td><strong>-0.475</strong> - the weight sails straight past zero and flips sign, 13x its own former size</td></tr>
+          <tr><td>w_orders</td><td>-0.5</td><td>0.83</td><td>-0.508 - a sane nudge</td></tr>
+          <tr><td>w_tickets</td><td>0.3</td><td>3.3</td><td>0.267 - a sane nudge</td></tr>
+          <tr><td>bias</td><td>-2</td><td>0.83</td><td>-2.008 - a sane nudge</td></tr>
+        </table>
+        <p>Re-run the forward pass with the new weights and z lands near <strong>-31</strong>, so the output slams from +0.83 to essentially <strong>-1</strong>: the neuron overshot from "confidently churn" to "maximally confident stay", pinned deep in tanh's saturated zone. One feature's raw scale turned a modest learning rate into a wrecking ball. Small learning rates and standardization are not two separate hygiene tips - they are one lesson about keeping lr x grad small, seen from both sides.</p>
+        <div class="callout tip">
+          <p><strong>Session 3 will hand you a learning-rate lever (0.03 / 0.3 / 1.5) on the live engine.</strong> When the hot rate destroys training on one dataset and rescues it on the spiral, tonight's crash is the mechanism to remember: the step size that matters is lr x grad, and grad depends on your data's scales.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 3 ============ -->
+  <section class="section" id="part-3">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · covers the honest history</span>
+      <h2>1986: what the famous paper actually claimed</h2>
+      <span class="tag concept">4 min live</span>
+    </div>
+    <p class="lede">Rumelhart, Hinton and Williams, Nature, 1986 - the paper that made neural networks respectable again. It is worth reading what it actually says, because both the pitch and the credit are routinely misremembered.</p>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The real pitch: learned representations<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The mechanics, in the paper's own words: backprop "repeatedly adjusts the weights of connections in the network so as to minimize" the output error - which is exactly the loop you just ran once by hand. But the headline the authors chose was not the mechanics. It was this:</p>
+        <div class="prompt-box good"><span class="label">Rumelhart, Hinton &amp; Williams 1986 - the actual headline claim</span>As a result of the weight adjustments, internal 'hidden' units which are not part of the input or output come to represent important features of the task domain</div>
+        <p><strong>Learned representations.</strong> Nobody designs what the hidden units detect; blame assignment alone sculpts them into feature detectors. That is the claim that ripened, over decades, into AlexNet's learned visual features (session 4) and embeddings (session 4's second act). The 1986 pitch was never "we can fit curves" - it was "the features design themselves".</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <span class="ex-pill">Real world</span>
+      <p><strong>The correction, stated as course content and not fine print: backprop was NOT invented in 1986.</strong> Seppo Linnainmaa published reverse-mode automatic differentiation in 1970. Paul Werbos applied it to network-like models in 1974 and again in 1982. What 1986 contributed was the demonstration that it works and matters - trained hidden representations on real tasks, in Nature, at the right cultural moment. The lineage is documented in Schmidhuber's 2015 survey (section 5.5), and getting it right is a cheap credibility test: anyone who says "Hinton invented backprop in 1986" is repeating the legend, not the record.</p>
+    </div>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Timeline of backpropagation: Linnainmaa publishes reverse-mode automatic differentiation in 1970, Werbos applies it to network-like models in 1974 and 1982, Rumelhart, Hinton and Williams demonstrate it in 1986, and from 2015 autograd engines are everywhere">
+        <style>
+          .n2cB { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n2cK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n2cY { font: 800 14px Inter, sans-serif; fill: #0E7490; }
+          .n2cS { font: 400 11px Inter, sans-serif; fill: #6B7280; }
+          .n2cN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+          .n2cA { font: 700 11px Inter, sans-serif; fill: #92400E; }
+        </style>
+        <line x1="60" y1="150" x2="830" y2="150" stroke="#D1D5DB" stroke-width="3"/>
+        <circle cx="120" cy="150" r="8" fill="#06B6D4"/>
+        <text class="n2cY" x="120" y="120" text-anchor="middle">1970</text>
+        <rect x="48" y="164" width="150" height="58" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n2cK" x="123" y="184" text-anchor="middle">Linnainmaa</text>
+        <text class="n2cS" x="123" y="200" text-anchor="middle">reverse-mode AD</text>
+        <text class="n2cS" x="123" y="214" text-anchor="middle">published</text>
+        <circle cx="330" cy="150" r="8" fill="#06B6D4"/>
+        <text class="n2cY" x="330" y="120" text-anchor="middle">1974 / 82</text>
+        <rect x="252" y="164" width="156" height="58" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n2cK" x="330" y="184" text-anchor="middle">Werbos</text>
+        <text class="n2cS" x="330" y="200" text-anchor="middle">applied to</text>
+        <text class="n2cS" x="330" y="214" text-anchor="middle">network-like models</text>
+        <circle cx="550" cy="150" r="11" fill="#155E75"/>
+        <text class="n2cY" x="550" y="120" text-anchor="middle">1986</text>
+        <rect x="462" y="164" width="176" height="58" rx="10" fill="#155E75"/>
+        <text class="n2cB" x="550" y="184" text-anchor="middle">Rumelhart, Hinton</text>
+        <text class="n2cB" x="550" y="200" text-anchor="middle">&amp; Williams</text>
+        <text class="n2cB" x="550" y="214" text-anchor="middle" style="font-weight:400">the DEMONSTRATION</text>
+        <circle cx="760" cy="150" r="8" fill="#06B6D4"/>
+        <text class="n2cY" x="760" y="120" text-anchor="middle">2015+</text>
+        <rect x="682" y="164" width="156" height="58" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n2cK" x="760" y="184" text-anchor="middle">autograd everywhere</text>
+        <text class="n2cS" x="760" y="200" text-anchor="middle">micrograd = the</text>
+        <text class="n2cS" x="760" y="214" text-anchor="middle">100-line distillation</text>
+        <rect x="462" y="52" width="176" height="34" rx="8" fill="#FFF7E6" stroke="#F59E0B" stroke-width="1.5"/>
+        <text class="n2cA" x="550" y="74" text-anchor="middle">popularized, not invented</text>
+        <line x1="550" y1="86" x2="550" y2="132" stroke="#F59E0B" stroke-width="2"/>
+        <text class="n2cN" x="60" y="262">Sixteen years from the math (1970) to the moment it mattered (1986). Lineage per Schmidhuber 2015, sec 5.5.</text>
+        <text class="n2cN" x="60" y="284">The idea was never the bottleneck. The demonstration - and the era ready to receive it - was.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the backprop timeline: invention, application, demonstration, ubiquity</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Saturation: where gradients go to die<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>One more thing your homework from session 1 already brushed against. tanh beyond |z| = 3 outputs within half a percent of ±1 - and its local derivative 1 - tanh(z)² drops below 0.01. A saturated unit passes less than 1 percent of the arriving blame through to everything behind it. The gradient <strong>vanishes</strong>.</p>
+        <p>One saturated neuron is a detail. A DEEP network of squashing activations is a chain of these factors multiplied together - and a chain of numbers below 1 shrinks exponentially with depth. This is a large part of why the sigmoid-era deep nets of the 1990s stalled, and it is the thread session 4 picks up when ResNet's authors open with "deeper neural networks are more difficult to train". Remember tonight's 0.01: the whole architecture story of session 4 is downstream of that little number.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Assign the blame, by hand</h2>
+      <span class="tag demo">★ 20 min · everyone builds</span>
+    </div>
+    <p class="lede">Pencil, paper, and customer A. Every number below reconciles - if yours does not, the error is findable, which is the entire luxury of a four-parameter network. Do this once slowly and loss.backward() stops being an incantation forever.</p>
+
+    <div class="steps">
+      <div class="step"><p><strong>Redraw customer A's forward pass as a graph.</strong> Inputs (62, 1, 4) into three multiply nodes (x 0.04, x -0.5, x 0.3), their outputs (2.48, -0.5, 1.2) plus bias -2 into the add node: z = 1.18. Through tanh: a ≈ 0.83. Label EVERY intermediate value on the drawing - the backward pass is about to consume each one.</p></div>
+      <div class="step"><p><strong>Compute the local derivatives you will need.</strong> At the output, with the demo's tanh-as-score simplification and y = 0: delta = p - y ≈ 0.83. At the tanh node, for practice (the multi-layer case needs it): 1 - tanh(1.18)² = 1 - 0.83² ≈ 0.32. At the add node: 1 toward every input. At each multiply node: the other factor.</p></div>
+      <div class="step"><p><strong>Chain them - fill in all four gradients.</strong> grad(w_days) = 0.83 x 62 ≈ 51.5. grad(w_orders) = 0.83 x 1 = 0.83. grad(w_tickets) = 0.83 x 4 ≈ 3.3. grad(bias) = delta ≈ 0.83 (the add node hands blame through unchanged). Sanity-check the signs: every gradient is positive, meaning "raising this weight raises the loss" - correct, since the network over-predicted churn and all inputs are positive.</p></div>
+      <div class="step"><p><strong>Take one step at lr 0.01 and re-run the forward pass.</strong> w_days: 0.04 - 0.515 = -0.475. w_orders: -0.508. w_tickets: 0.267. bias: -2.008. New z ≈ -31, new output ≈ -1: the network vaulted from "confident churn" to "maximally confident stay" in one step. Write one sentence on why the days weight moved 62x further than the orders weight - if your sentence does not contain the words "input scale", look at step 3 again.</p></div>
+      <div class="step"><p><strong>Standardize and redo the gradients.</strong> Rough z-scores for customer A against the customer base: days 62 becomes about 1.2, orders 1 becomes about -1.1, tickets 4 becomes about 1.5. Now grad(w_days) ≈ 0.83 x 1.2 ≈ 1.0, grad(w_orders) ≈ 0.83 x -1.1 ≈ -0.91, grad(w_tickets) ≈ 0.83 x 1.5 ≈ 1.25. Comparable magnitudes; a 0.01 step now nudges every weight by about a hundredth. The standardization lesson, earned by hand rather than recited.</p></div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>What to bring to session 3.</strong> Your graph with all four gradients on it. Session 3 closes the loop: compute blame, step, repeat, hundreds of times, live in your browser - then the same five moves spelled out in PyTorch (forward, loss, backward, step, zero the gradients). You have now done the first four by hand; the fifth exists for a reason the live session demonstrates.</p>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 3</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li><strong>Run the backward pass on customer B</strong> (days 8, orders 6, tickets 0 - from session 1: z ≈ -4.7, output ≈ -1). Compute tanh's local derivative there: 1 - (-1)² ≈ 0.0004. Almost no blame can flow through a saturated unit, whatever the loss says. You have just met a vanished gradient in person.</li>
+      <li><strong>Flip the label:</strong> redo customer A with y = 1 (pretend A truly churned). delta = 0.83 - 1 = -0.17: every gradient flips sign and shrinks to a fifth of its size. Blame is proportional to how wrong you were - a nearly-right prediction generates nearly no learning.</li>
+      <li><strong>Rescue the raw-input crash with the OTHER lever:</strong> keep the unstandardized inputs but drop lr to 0.001. w_days now moves 0.04 to -0.012 - still sign-flipping. Write one sentence on why shrinking the learning rate alone is a poor substitute for standardizing.</li>
+      <li><strong>Read micrograd's engine for real this time</strong> - about 100 lines. Find the tanh backward rule and confirm it is your 1 - tanh² from step 2, written as code. Every gradient you computed tonight, that file computes the same way.</li>
+      <li><strong>Optional:</strong> skim section 5.5 of Schmidhuber's 2015 survey for the full backprop lineage. Ten minutes, and the 1986 legend never fools you again.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+    <p>Clear all three and session 2 gets stamped in your passport.</p>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · In the hand-computed backward pass, the days weight received a gradient of 51.5 while the orders weight received 0.83 - about 62x more. Why?</p>
+      <button class="qopt" type="button">A · Days since last order is genuinely 62x more predictive of churn than order count</button>
+      <button class="qopt" type="button">B · grad(w) = delta x input, and the raw days input (62) is 62x the orders input (1) - the gap is an artifact of input scale, not of importance</button>
+      <button class="qopt" type="button">C · The tanh derivative amplifies gradients for weights earlier in the graph</button>
+      <p class="qwhy">The multiply node's local derivative toward its weight is the OTHER factor - the input. Delta is shared, so gradient ratios equal raw input ratios: 62 : 1 : 4. Nothing about the data's meaning says days matter 62x more; measure days in years and the gradient shrinks 365-fold. This is the calculus behind standardization, and step 5 of the build-along showed z-scored inputs producing comparable gradients (1.0 / -0.91 / 1.25).</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · What did the 1986 Rumelhart, Hinton &amp; Williams paper actually contribute to backpropagation?</p>
+      <button class="qopt" type="button">A · The invention of the algorithm - reverse-mode differentiation first appeared in this paper</button>
+      <button class="qopt" type="button">B · The proof that backprop always converges to the best weights</button>
+      <button class="qopt" type="button">C · The demonstration that it works and matters - trained hidden units "come to represent important features of the task domain" - while the algorithm itself predates it (Linnainmaa 1970, Werbos 1974/82)</button>
+      <p class="qwhy">Reverse-mode automatic differentiation was published by Linnainmaa in 1970 and applied to network-like models by Werbos in 1974 and 1982 (lineage per Schmidhuber 2015, section 5.5). The 1986 paper's contribution was the demonstration - and its chosen headline was learned internal representations, not curve-fitting. "Invented in 1986" is the legend; "shown to work and matter in 1986" is the record.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · A tanh unit sits at z = 5, outputting 0.9999. Why has it effectively stopped learning?</p>
+      <button class="qopt" type="button">A · Its local derivative 1 - tanh(z)² is nearly zero there, so almost no gradient flows through it - the blame vanishes on the way to its weights</button>
+      <button class="qopt" type="button">B · Its output is so close to 1 that the loss function ignores it</button>
+      <button class="qopt" type="button">C · Weights connected to saturated units are automatically frozen by the training loop</button>
+      <p class="qwhy">The backward pass multiplies local derivatives along the path, and a saturated tanh contributes a factor below 0.01 (at |z| = 3; far smaller at 5). Whatever blame arrives, under 1 percent continues through. Stack many squashing units in a deep net and these sub-1 factors multiply into exponential vanishing - a core reason sigmoid-era deep nets stalled, and the thread session 4's ResNet story picks up.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ OFFICIAL COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What this session teaches, and where it came from</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Rumelhart, Hinton &amp; Williams 1986, Nature</span><span class="note">Quoted for the mechanics and the learned-representations headline - carried WITH the lineage correction: popularized in 1986, invented earlier (Linnainmaa 1970, Werbos 1974/82)</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Karpathy, micrograd</span><span class="note">The scalar-graph frame for the whole session; README quoted verbatim - reverse-mode autodiff over a dynamically built DAG, engine ~100 lines</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Schmidhuber 2015 (arXiv:1404.7828, sec 5.5)</span><span class="note">Cited as the lineage reference only; the full survey belongs to the historians</span></div>
+    </div>
+    <p class="mono" style="margin-top:14px">Full source map with every URL and every honesty caveat: <span class="mono">materials/official-course-map.md</span> in this repo.</p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 2 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>The whole trick</b><span>Draw the arithmetic as a graph; each node knows only its LOCAL derivative; multiply them along the path from loss to weight. One backward sweep gradients everything.</span></div>
+      <div class="cheat-item"><b>The local toolbox</b><span>add passes blame unchanged; multiply passes the OTHER factor; tanh passes 1 - tanh(z)². At z = 1.18 that is 0.32.</span></div>
+      <div class="cheat-item"><b>The clean delta</b><span>sigmoid output + BCE loss simplify to delta = p - y at the output. Every weight's gradient is delta x its input; the bias gets delta itself.</span></div>
+      <div class="cheat-item"><b>Blame follows scale</b><span>Customer A's gradients: 51.5 / 0.83 / 3.3 - the ratios of the raw inputs. Standardize (z-scores 1.2 / -1.1 / 1.5) and they become 1.0 / -0.91 / 1.25.</span></div>
+      <div class="cheat-item"><b>The step, and the crash</b><span>w -= lr x grad. At lr 0.01, w_days flew from 0.04 to -0.475 and the output slammed to -1. What matters is lr x grad - small rates and standardization are one lesson.</span></div>
+      <div class="cheat-item"><b>The honest lineage</b><span>Linnainmaa 1970 (reverse-mode AD), Werbos 1974/82 (networks), 1986 (the demonstration + learned representations). Saturation: beyond |z| = 3, tanh's derivative is under 0.01.</span></div>
+    </div>
+  </section>
+
+  <div class="callout next">
+    <span class="nx-pill">Next session</span>
+    <p>Tonight you computed one backward pass. Session 3 closes the loop: blame, step, repeat - gradient descent running live in your browser on a real network, where you will watch XOR go from a 48.3 percent coin flip with no hidden layer to 95 with one layer of 8, and a spiral sit stuck at 55 until the optimizer (not the theorem) arrives. Then the same loop, spelled as PyTorch's five moves.</p>
+  </div>
+
+  <footer class="pagefoot">
+    <span>Session 2 of 6 · learn-deep-learning-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="01-the-neuron.html">← Prev: The neuron</a> &nbsp;·&nbsp; <a href="../index.html">All sessions</a> &nbsp;·&nbsp; <a href="03-the-training-loop.html">Next: The training loop →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

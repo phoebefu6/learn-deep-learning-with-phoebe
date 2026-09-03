@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Session 3 of 6. The training loop, live: a real neural network carves decision boundaries in your browser - XOR falls to one hidden layer, the spiral exposes the difference between capacity and optimization, and the PyTorch five moves map onto everything you just watched.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="The training loop - learn deep learning with phoebe">
+<meta property="og:description" content="Session 3 of 6. A real network carves boundaries live - and the spiral teaches the lesson the theorem cannot.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/courses/03-the-training-loop.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The training loop - learn deep learning with phoebe">
+<meta name="twitter:description" content="Session 3 of 6. A real network carves boundaries live in your browser.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-deep-learning-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Session 3 · The training loop - learn deep learning with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-deep-learning-with-phoebe</a> / Session 3 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn Deep Learning with Phoebe · Session 3 of 6</div>
+    <h1>The training <span class="accent">loop</span></h1>
+    <p class="sub">Session 2 gave every weight its share of the blame. Tonight the loop closes: blame becomes a step, steps become epochs, and a real network - genuine forward and backward passes running in your browser - carves decision boundaries in front of you. XOR falls exactly as session 1 predicted. Then the spiral teaches the lesson no theorem could: a network with plenty of capacity, stuck at 55 percent, until the optimizer - not the architecture - is fixed.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Medium</span>
+      <span class="chip audience">Builders - you assigned blame by hand in session 2</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-18 · The loop and its five moves</span>
+      <span class="a3" style="flex:5">18-40 · Build-along: carve boundaries live</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where session 2 left you</h2>
+    </div>
+    <p class="lede">You can now compute, by hand, how much each weight contributed to one wrong answer. Training is that computation run over all examples, converted into a small correction, and repeated until the corrections stop helping. Everything else - optimizers, learning rates, epochs - is bookkeeping around that sentence.</p>
+
+    <div class="legend">
+      <span class="pill">🎫 Clear all three quiz questions to stamp your passport</span>
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> The loop as five moves you can name in PyTorch and point to in the browser engine. A boundary you watched a real network carve. And the spiral's lesson - capacity and optimization are different problems - which is worth more than most courses' entire treatment of "hyperparameters".</p>
+    </div>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The loop, in the words you will actually type<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>PyTorch's own tutorial reduces training to five moves, and they map one-to-one onto what session 2 built on paper:</p>
+        <ul>
+          <li><strong>pred = model(X)</strong> - the forward pass. Session 1, vectorized.</li>
+          <li><strong>loss = loss_fn(pred, y)</strong> - one number scoring the wrongness.</li>
+          <li><strong>loss.backward()</strong> - the chain rule walked in reverse. Session 2, automated.</li>
+          <li><strong>optimizer.step()</strong> - every weight moves a little, against its blame.</li>
+          <li><strong>optimizer.zero_grad()</strong> - reset the ledger. The tutorial's own reason, verbatim: "Gradients by default add up; to prevent double-counting, we explicitly zero them at each iteration."</li>
+        </ul>
+        <p>The order of zero_grad is flexible; the invariant is once per iteration, before the next backward. As of September 2026 the stable release is PyTorch 2.14, and torch.compile is the standard opt-in speedup - but these five moves have not changed since the beginning, which is why they are the thing to learn.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 1 ============ -->
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the loop's two dials</span>
+      <h2>Learning rate and epochs: the step and the patience</h2>
+      <span class="tag concept">7 min live</span>
+    </div>
+    <p class="lede">Two numbers govern the loop. The learning rate scales every correction; the epoch count decides how long you keep correcting. Both have failure modes at both ends, and tonight you will produce all four failures on purpose.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The training loop as a cycle: forward pass, loss, backward pass, step, zero the gradients, with learning rate scaling the step">
+        <style>
+          .n3aB { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n3aS { font: 400 11px Inter, sans-serif; fill: #A5F3FC; }
+          .n3aK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n3aE { font: 600 11px Inter, sans-serif; fill: #0E7490; }
+          .n3aN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <defs>
+          <marker id="n3Ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#D1D5DB"/></marker>
+        </defs>
+        <rect x="90" y="50" width="200" height="60" rx="12" fill="#155E75"/>
+        <text class="n3aB" x="190" y="76" text-anchor="middle">1 · forward pass</text>
+        <text class="n3aS" x="190" y="96" text-anchor="middle">pred = model(X)</text>
+        <line x1="290" y1="80" x2="360" y2="80" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n3Ar)"/>
+        <rect x="364" y="50" width="180" height="60" rx="12" fill="#155E75"/>
+        <text class="n3aB" x="454" y="76" text-anchor="middle">2 · loss</text>
+        <text class="n3aS" x="454" y="96" text-anchor="middle">one number of wrong</text>
+        <line x1="544" y1="80" x2="614" y2="80" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n3Ar)"/>
+        <rect x="618" y="50" width="200" height="60" rx="12" fill="#155E75"/>
+        <text class="n3aB" x="718" y="76" text-anchor="middle">3 · backward pass</text>
+        <text class="n3aS" x="718" y="96" text-anchor="middle">blame per weight (s2)</text>
+        <line x1="718" y1="110" x2="718" y2="180" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n3Ar)"/>
+        <rect x="618" y="184" width="200" height="60" rx="12" fill="#0E7490"/>
+        <text class="n3aB" x="718" y="210" text-anchor="middle">4 · step</text>
+        <text class="n3aS" x="718" y="230" text-anchor="middle">w -= lr x blame</text>
+        <line x1="618" y1="214" x2="470" y2="214" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n3Ar)"/>
+        <rect x="290" y="184" width="176" height="60" rx="12" fill="#0E7490"/>
+        <text class="n3aB" x="378" y="210" text-anchor="middle">5 · zero_grad</text>
+        <text class="n3aS" x="378" y="230" text-anchor="middle">gradients add up: reset</text>
+        <path d="M 290 214 L 190 214 L 190 114" fill="none" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n3Ar)"/>
+        <text class="n3aE" x="150" y="170">one epoch =</text>
+        <text class="n3aE" x="150" y="186">the whole lap</text>
+        <rect x="90" y="280" width="730" height="40" rx="10" fill="#ECFEFF"/>
+        <text class="n3aK" x="455" y="305" text-anchor="middle">The learning rate lives in move 4: it scales EVERY correction. Too small: nothing moves. Too big: it thrashes.</text>
+        <text class="n3aN" x="90" y="348">These five moves are verbatim the PyTorch tutorial loop - and exactly what the browser engine below runs, minus the library.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the loop that trains every network you will ever ship</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The Karpathy recipe: why loops fail silently<span class="mini">5 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Andrej Karpathy's "A Recipe for Training Neural Networks" opens with the premise that explains most wasted GPU-months: <strong>"neural net training fails silently."</strong> A broken loop does not crash - it trains a slightly wrong thing and reports plausible numbers. The recipe's defenses, in his own words:</p>
+        <ul>
+          <li><strong>"Become one with the data"</strong> - hours of looking before any model exists.</li>
+          <li><strong>"Verify loss @ init"</strong> - an untrained classifier on balanced two-class data should start near log(2) ≈ 0.69. If it does not, the bug is already present.</li>
+          <li><strong>"Overfit one batch... as little as two"</strong> examples - if the loop cannot drive two examples to zero loss, moves 3-5 are broken, and no amount of data will hide it.</li>
+          <li><strong>"Don't be a hero"</strong> - standard architecture first, cleverness after the baseline works.</li>
+        </ul>
+        <div class="callout tip">
+          <p><strong>The habit version.</strong> Fix the seed, verify the init loss, overfit one batch, then scale. Four checks, five minutes, and the silent failure class mostly dies. The browser engine below fixes its seed for exactly the first reason: when you run it twice, you get the same numbers, so a change you see is a change you made.</p>
+        </div>
+      </div>
+    </details>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three loss curves for three learning rates: too small crawls, well chosen descends smoothly, too hot falls then thrashes upward">
+        <style>
+          .n3cH { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n3cS { font: 400 11px Inter, sans-serif; fill: #A5F3FC; }
+          .n3cY { font: 400 11px Inter, sans-serif; fill: #111827; }
+          .n3cN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <rect x="60" y="50" width="238" height="180" rx="12" fill="#155E75"/>
+        <text class="n3cH" x="179" y="80" text-anchor="middle">rate too small</text>
+        <line x1="84" y1="200" x2="274" y2="200" stroke="#A5F3FC" stroke-width="1" opacity="0.4"/>
+        <path d="M 84 110 C 140 118, 200 124, 274 130" fill="none" stroke="#A5F3FC" stroke-width="2.5"/>
+        <text class="n3cS" x="179" y="170" text-anchor="middle">loss crawls: every step is</text>
+        <text class="n3cS" x="179" y="188" text-anchor="middle">right, and far too shy</text>
+        <rect x="322" y="50" width="238" height="180" rx="12" fill="#0E7490"/>
+        <text class="n3cH" x="441" y="80" text-anchor="middle">rate well chosen</text>
+        <line x1="346" y1="200" x2="536" y2="200" stroke="#A5F3FC" stroke-width="1" opacity="0.4"/>
+        <path d="M 346 100 C 390 160, 440 190, 536 197" fill="none" stroke="#A5F3FC" stroke-width="2.5"/>
+        <text class="n3cS" x="441" y="170" text-anchor="middle">smooth descent to the</text>
+        <text class="n3cS" x="441" y="188" text-anchor="middle">floor the data allows</text>
+        <rect x="584" y="50" width="238" height="180" rx="12" fill="#F59E0B"/>
+        <text class="n3cH" x="703" y="80" text-anchor="middle" fill="#111827" style="fill:#111827">rate too hot</text>
+        <line x1="608" y1="200" x2="798" y2="200" stroke="#92400E" stroke-width="1" opacity="0.4"/>
+        <path d="M 608 100 C 640 170, 660 180, 690 140 C 715 110, 740 170, 765 120 L 798 90" fill="none" stroke="#92400E" stroke-width="2.5"/>
+        <text class="n3cY" x="703" y="170" text-anchor="middle">falls, then overshoots the</text>
+        <text class="n3cY" x="703" y="188" text-anchor="middle">valley and thrashes upward</text>
+        <text class="n3cN" x="60" y="262">The middle panel is not a fixed number - the spiral needed 1.5 where moons liked 0.3. The right rate is a property</text>
+        <text class="n3cN" x="60" y="282">of the loss surface, which is why you sweep it first and why adaptive optimizers exist at all.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the three endings of a learning rate, all reproducible on tonight's playground</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>From this loop to Adam, honestly<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The engine on this page uses plain full-batch gradient descent - every example votes, one aggregate step. Production loops differ in two upgrades:</p>
+        <ul>
+          <li><strong>Minibatches:</strong> step on a random few hundred examples at a time. Noisier steps, far more of them per pass - almost always a net win at scale.</li>
+          <li><strong>Adaptive steps:</strong> Adam (ICLR 2015) keeps running estimates of each weight's gradient moments and scales each weight's step individually - "well suited for problems that are large in terms of data and/or parameters", per the paper. The modern default is <strong>AdamW</strong> (2019), which fixed a subtle flaw: L2 regularization and weight decay "are equivalent for standard stochastic gradient descent... but as we demonstrate this is not the case for adaptive gradient algorithms, such as Adam". Decoupling them, in torch.optim.AdamW, measurably generalizes better.</li>
+        </ul>
+        <p>Neither upgrade changes the five moves. They change how big move 4 is, per weight - the loop is the loop.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ DEMO ============ -->
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Carve boundaries, live</h2>
+      <span class="tag demo">★ 22 min · everyone builds</span>
+    </div>
+    <p class="lede">The playground below is the course engine running for real: every press of train executes genuine forward and backward passes, and the heatmap is the live network queried on a pixel grid. Cyan region: the net votes class one. Amber: class zero. The dots are the data it is learning from.</p>
+
+    <div id="dl-boundary"></div>
+
+    <div class="steps">
+      <div class="step"><p><strong>Start on moons, defaults (2 layers of 8, rate 0.3). Train 200 epochs.</strong> Watch the boundary bend around the two crescents and the numbers settle near 93 train / 88 test. Easy data: everything works, which is exactly why it is first - you now know what healthy looks like.</p></div>
+      <div class="step"><p><strong>Switch to XOR and set hidden layers to 0. Train as long as you like.</strong> The boundary stays a straight line - it can only ever be a straight line - and the test score sits at 48.3 percent, a coin flip. This is session 1's algebra rendered in pixels: no bend, no XOR.</p></div>
+      <div class="step"><p><strong>Give it one hidden layer of 8 and retrain.</strong> The line bends into the diagonal regions and the test score reaches 95. Nine-ish parameters of bend, exactly the network you built by hand in session 1, found by the loop instead of by you.</p></div>
+      <div class="step"><p><strong>Now the main event: spiral, 1 layer of 8, rate 0.3. Train 600 epochs (three presses).</strong> Stuck at roughly 55 percent, boundary a vague smear. The tempting diagnosis is "not enough capacity". Hold that thought.</p></div>
+      <div class="step"><p><strong>Same architecture, rate 1.5. Train 1200 epochs (six presses).</strong> The SAME network unwinds the spiral - about 98.9 train / 100 test. Nothing about capacity changed; the optimizer got there. The universal approximation theorem promised the network existed; it never promised rate 0.3 and 600 epochs would find it. You have now seen the difference between existence and findability, measured.</p></div>
+      <div class="step"><p><strong>Finish with 2 layers of 16 at rate 1.5.</strong> The spiral falls in 600 epochs flat: 100 / 100. More capacity did not make the solution better - it made the solution EASIER TO FIND. That reframe, capacity as optimization aid, is the honest modern reading of why depth wins, and it returns in session 4 as the ResNet story.</p></div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>The sentence to keep.</strong> "The network cannot learn it" is two different diagnoses wearing one phrase: not enough capacity, or not enough optimization. The spiral just showed you they respond to different medicine - and that the second is the one people misdiagnose.</p>
+    </div>
+
+    <div class="scorecard" data-title="Halfway check - do you own the loop" data-foot="A forgiving check. Mostly-no is normal at halfway; do the lowest row before session 4.">
+      <div class="sc-row"><div class="sc-q">You can name the five moves in order and say what each does<em>Forward, loss, backward, step, zero_grad - and why gradients must be zeroed.</em></div></div>
+      <div class="sc-row"><div class="sc-q">You produced the XOR failure and the XOR fix yourself<em>48.3 with no hidden layer, 95 with one layer of 8 - your own clicks.</em></div></div>
+      <div class="sc-row"><div class="sc-q">You watched the spiral distinguish capacity from optimization<em>Same net: 55 stuck at rate 0.3, solved at 1.5. Two diagnoses, one phrase.</em></div></div>
+      <div class="sc-row"><div class="sc-q">You can state two Karpathy recipe rules from memory<em>Verify loss at init; overfit one batch first. Training fails silently.</em></div></div>
+      <div class="sc-row"><div class="sc-q">You know what AdamW changes and what it does not<em>Per-weight adaptive steps with decoupled decay - the five moves stay the same.</em></div></div>
+    </div>
+  </section>
+
+  <!-- ============ PART 2 ============ -->
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers reading a stuck loop</span>
+      <h2>Diagnosing the loop: a field guide</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">Every stuck training run you will ever debug is one of a handful of shapes. You produced most of them tonight on purpose; here is the field guide version, in the order to check.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four stuck-loop shapes: loss flat from the start, loss falling then exploding, train fine but test flat, and both slowly improving - with the diagnosis for each">
+        <style>
+          .n3bH { font: 700 12px Inter, sans-serif; fill: #fff; }
+          .n3bK { font: 700 12px Inter, sans-serif; fill: #111827; }
+          .n3bS { font: 400 11px Inter, sans-serif; fill: #A5F3FC; }
+          .n3bT { font: 400 11px Inter, sans-serif; fill: #111827; }
+          .n3bN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
+        </style>
+        <rect x="60" y="50" width="184" height="180" rx="12" fill="#155E75"/>
+        <text class="n3bH" x="152" y="80" text-anchor="middle">Flat from epoch 0</text>
+        <path d="M 84 130 L 220 128" fill="none" stroke="#A5F3FC" stroke-width="2.5"/>
+        <text class="n3bS" x="152" y="164" text-anchor="middle">wrong init loss, dead</text>
+        <text class="n3bS" x="152" y="182" text-anchor="middle">units, or lr too small</text>
+        <text class="n3bS" x="152" y="206" text-anchor="middle">check loss @ init first</text>
+        <rect x="264" y="50" width="184" height="180" rx="12" fill="#155E75"/>
+        <text class="n3bH" x="356" y="80" text-anchor="middle">Falls, then explodes</text>
+        <path d="M 288 110 C 330 150, 360 160, 380 130 L 400 90" fill="none" stroke="#A5F3FC" stroke-width="2.5"/>
+        <text class="n3bS" x="356" y="164" text-anchor="middle">learning rate too hot</text>
+        <text class="n3bS" x="356" y="182" text-anchor="middle">for this loss surface</text>
+        <text class="n3bS" x="356" y="206" text-anchor="middle">drop lr, retrain</text>
+        <rect x="468" y="50" width="184" height="180" rx="12" fill="#F59E0B"/>
+        <text class="n3bH" x="560" y="80" text-anchor="middle" fill="#111827" style="fill:#111827">Train up, test flat</text>
+        <path d="M 492 150 C 530 110, 560 95, 628 80" fill="none" stroke="#155E75" stroke-width="2.5"/>
+        <path d="M 492 155 C 530 140, 560 138, 628 140" fill="none" stroke="#fff" stroke-width="2.5"/>
+        <text class="n3bT" x="560" y="182" text-anchor="middle">memorizing, not learning</text>
+        <text class="n3bT" x="560" y="206" text-anchor="middle">session 5's whole subject</text>
+        <rect x="672" y="50" width="148" height="180" rx="12" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+        <text class="n3bK" x="746" y="80" text-anchor="middle">Both crawling</text>
+        <path d="M 692 160 C 720 150, 750 140, 800 122" fill="none" stroke="#0E7490" stroke-width="2.5"/>
+        <text class="n3bT" x="746" y="182" text-anchor="middle">underpowered: more</text>
+        <text class="n3bT" x="746" y="200" text-anchor="middle">epochs, hotter lr,</text>
+        <text class="n3bT" x="746" y="218" text-anchor="middle">or more capacity</text>
+        <text class="n3bN" x="60" y="272">The spiral at rate 0.3 was shape four; the fix was a hotter rate, not a bigger net. Shape three is next session's</text>
+        <text class="n3bN" x="60" y="292">tabular showdown, where a 2x16 net hits train 100 and holdout 60 on 200 rows.</text>
+        <text class="n3bN" x="60" y="320">Order matters: check init loss before touching architecture - the silent failures live earliest in the pipeline.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the four stuck shapes and their first-move fixes</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why the engine fixes its seed, and why you should too<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The recipe's second step includes an unglamorous instruction that pays for itself forever: "fix random seed... guarantee that when you run the code twice you will get the same outcome." Every number this course quotes - the 48.3, the 95, the 55-then-solved spiral - is reproducible on your machine because the engine's initialization and datasets are seeded.</p>
+        <p>Without the seed, a run that improves might be your change or might be luck, and you cannot tell. With it, every difference you see is a difference you caused. Determinism is not pedantry; it is the precondition for learning anything from an experiment.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p>Mango Lane's contractor "improved" a model four times in one week. Three of the four improvements were reruns with different random initializations of the same code. Nobody could tell, because nothing was seeded - a week of work indistinguishable from a random number generator.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 4</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li><strong>Produce all four stuck shapes on the playground</strong> - flat (rate 0.03 on spiral), thrash (find a config where rate 1.5 hurts), memorize (you will need session 6's tabular mode for the full version - note which shape you could NOT produce on 2D toys and why), crawl (rate 0.03 on moons). Write one line per shape.</li>
+      <li><strong>Find every dataset's minimum architecture:</strong> for moons, xor, circle, spiral - the smallest layers-and-width that clears 90 percent test. Note that the ranking of datasets by difficulty IS a statement about their geometry.</li>
+      <li><strong>Write the five moves from memory</strong> as five lines of pseudo-PyTorch. Check against the official tutorial. Ten minutes, permanent.</li>
+      <li><strong>Read the Karpathy recipe post in full</strong> - it is short, and you have now personally verified three of its rules.</li>
+      <li><strong>Optional:</strong> install PyTorch and run the tutorial loop on its FashionMNIST example. You will recognize every line.</li>
+    </ol>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+    <p>Clear all three and session 3 gets stamped in your passport.</p>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · The spiral sat at 55 percent with one layer of 8 at rate 0.3, then the SAME architecture solved it at rate 1.5 with more epochs. What does this demonstrate?</p>
+      <button class="qopt" type="button">A · That the universal approximation theorem is false for spirals</button>
+      <button class="qopt" type="button">B · That capacity and optimization are separate problems: the network that could express the solution existed the whole time - the optimizer had not found it</button>
+      <button class="qopt" type="button">C · That learning rate 1.5 is always better than 0.3</button>
+      <p class="qwhy">The theorem's existence promise was kept - the fix required zero new parameters. What changed was findability: a hotter rate and more epochs let gradient descent escape the flat region it was crawling through. "The network cannot learn it" is two diagnoses in one phrase, and this is the measured proof they differ. (And no - on easier surfaces a hot rate can thrash; the field guide's shape two.)</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · Why must gradients be zeroed once per iteration in the PyTorch loop?</p>
+      <button class="qopt" type="button">A · To free GPU memory between batches</button>
+      <button class="qopt" type="button">B · A superstition from old versions - modern PyTorch does it automatically</button>
+      <button class="qopt" type="button">C · Because, per the tutorial itself, "gradients by default add up" - without zeroing, each step would apply the accumulated blame of every previous batch too</button>
+      <p class="qwhy">Accumulation is a feature (it enables gradient accumulation tricks), which is exactly why resetting is YOUR job. Forget it and the loop still runs, loss still falls for a while, and the model is quietly wrong - a textbook member of the fails-silently class the Karpathy recipe exists to catch.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Your new classifier's loss at initialization is 2.9 on a balanced two-class problem. Before touching the architecture, what does the recipe say this means?</p>
+      <button class="qopt" type="button">A · Something is already broken: a balanced two-class classifier should start near log(2), about 0.69 - "verify loss @ init" exists precisely for this</button>
+      <button class="qopt" type="button">B · Nothing - initial loss is random and means nothing</button>
+      <button class="qopt" type="button">C · The model needs more layers to bring the initial loss down</button>
+      <p class="qwhy">An untrained net on balanced two-class data should be maximally unsure, and maximal unsureness has a computable loss. 2.9 at init means the output layer, the loss wiring, or the labels are already wrong - and training would "work" anyway, silently, on top of the bug. Cheapest check in the whole discipline.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ OFFICIAL COVERAGE ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What this session teaches, and where it came from</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">PyTorch official tutorial loop</span><span class="note">The five moves with the tutorial's own zero_grad rationale quoted; version status Sept 2026 noted</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Karpathy, A Recipe for Training Neural Networks</span><span class="note">Fails-silently premise and four rules quoted verbatim, three of them verified live tonight</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Adam (ICLR 2015) + AdamW (ICLR 2019)</span><span class="note">Adaptive moments quoted; the decoupled-weight-decay correction carried - AdamW is the modern default</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">The boundary engine's measured canon</span><span class="note">Every number quoted on this page re-runs live in this browser: 48.3 / 95 / 55-then-solved / 100</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Universal approximation, revisited</span><span class="note">The spiral is session 1's caveat made visible; the theorems themselves were session 1's subject</span></div>
+    </div>
+    <p class="mono" style="margin-top:14px">Full source map with every URL and every honesty caveat: <span class="mono">materials/official-course-map.md</span> in this repo.</p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 3 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>The five moves</b><span>forward, loss, backward, step, zero_grad. Gradients add up by default - resetting is your job.</span></div>
+      <div class="cheat-item"><b>Fails silently</b><span>Broken loops do not crash; they train a wrong thing plausibly. Verify loss @ init, overfit one batch.</span></div>
+      <div class="cheat-item"><b>The spiral lesson</b><span>Capacity and optimization are different problems. Same net: 55 stuck, 100 solved - only the optimizer changed.</span></div>
+      <div class="cheat-item"><b>Capacity as ease</b><span>2x16 solved the spiral faster than 1x8 ever did - extra capacity often buys findability, not expressiveness.</span></div>
+      <div class="cheat-item"><b>The four stuck shapes</b><span>Flat from zero, falls-then-explodes, train-up-test-flat, both-crawling. Check init loss before architecture.</span></div>
+      <div class="cheat-item"><b>AdamW, not Adam</b><span>Decoupled weight decay generalizes better on adaptive optimizers. The loop's five moves stay identical.</span></div>
+    </div>
+  </section>
+
+  <div class="callout next">
+    <span class="nx-pill">Next session</span>
+    <p>The loop can now train anything you can wire up. Session 4 is about what to wire: convolution as a promise about images (LeNet's 0.95 percent on digits in 1998), the two-GPU week that changed everything in 2012 (their entry: 15.3 percent top-5 against the runner-up's 26.2), and the residual trick that made 152 layers trainable - plus embeddings, where the hidden layers' learned representations become the product.</p>
+  </div>
+
+  <footer class="pagefoot">
+    <span>Session 3 of 6 · learn-deep-learning-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="02-backprop-by-hand.html">← Prev: Backprop by hand</a> &nbsp;·&nbsp; <a href="04-seeing-and-embedding.html">Next: Seeing and embedding →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+<script src="../assets/dl-live.js?v=1"></script>
+</body>
+</html>
