@@ -127,8 +127,8 @@
         <text class="n3aB" x="378" y="210" text-anchor="middle">5 · zero_grad</text>
         <text class="n3aS" x="378" y="230" text-anchor="middle">gradients add up: reset</text>
         <path d="M 290 214 L 190 214 L 190 114" fill="none" stroke="#D1D5DB" stroke-width="2" marker-end="url(#n3Ar)"/>
-        <text class="n3aE" x="150" y="170">one epoch =</text>
-        <text class="n3aE" x="150" y="186">the whole lap</text>
+        <text class="n3aE" x="180" y="170" text-anchor="end">one epoch =</text>
+        <text class="n3aE" x="180" y="186" text-anchor="end">the whole lap</text>
         <rect x="90" y="280" width="730" height="40" rx="10" fill="#ECFEFF"/>
         <text class="n3aK" x="455" y="305" text-anchor="middle">The learning rate lives in move 4: it scales EVERY correction. Too small: nothing moves. Too big: it thrashes.</text>
         <text class="n3aN" x="90" y="348">These five moves are verbatim the PyTorch tutorial loop - and exactly what the browser engine below runs, minus the library.</text>
@@ -153,33 +153,33 @@
     </details>
 
     <figure class="zoomable">
-      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three loss curves for three learning rates: too small crawls, well chosen descends smoothly, too hot falls then thrashes upward">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three loss curves for three learning rates: too small crawls, well chosen descends smoothly, too hot falls then thrashes upward">
         <style>
           .n3cH { font: 700 12px Inter, sans-serif; fill: #fff; }
           .n3cS { font: 400 11px Inter, sans-serif; fill: #A5F3FC; }
           .n3cY { font: 400 11px Inter, sans-serif; fill: #111827; }
           .n3cN { font: 400 12px Inter, sans-serif; fill: #6B7280; }
         </style>
-        <rect x="60" y="50" width="238" height="180" rx="12" fill="#155E75"/>
+        <rect x="60" y="50" width="238" height="200" rx="12" fill="#155E75"/>
         <text class="n3cH" x="179" y="80" text-anchor="middle">rate too small</text>
         <line x1="84" y1="200" x2="274" y2="200" stroke="#A5F3FC" stroke-width="1" opacity="0.4"/>
         <path d="M 84 110 C 140 118, 200 124, 274 130" fill="none" stroke="#A5F3FC" stroke-width="2.5"/>
-        <text class="n3cS" x="179" y="170" text-anchor="middle">loss crawls: every step is</text>
-        <text class="n3cS" x="179" y="188" text-anchor="middle">right, and far too shy</text>
-        <rect x="322" y="50" width="238" height="180" rx="12" fill="#0E7490"/>
+        <text class="n3cS" x="179" y="220" text-anchor="middle">loss crawls: every step is</text>
+        <text class="n3cS" x="179" y="236" text-anchor="middle">right, and far too shy</text>
+        <rect x="322" y="50" width="238" height="200" rx="12" fill="#0E7490"/>
         <text class="n3cH" x="441" y="80" text-anchor="middle">rate well chosen</text>
         <line x1="346" y1="200" x2="536" y2="200" stroke="#A5F3FC" stroke-width="1" opacity="0.4"/>
         <path d="M 346 100 C 390 160, 440 190, 536 197" fill="none" stroke="#A5F3FC" stroke-width="2.5"/>
-        <text class="n3cS" x="441" y="170" text-anchor="middle">smooth descent to the</text>
-        <text class="n3cS" x="441" y="188" text-anchor="middle">floor the data allows</text>
-        <rect x="584" y="50" width="238" height="180" rx="12" fill="#F59E0B"/>
+        <text class="n3cS" x="441" y="220" text-anchor="middle">smooth descent to the</text>
+        <text class="n3cS" x="441" y="236" text-anchor="middle">floor the data allows</text>
+        <rect x="584" y="50" width="238" height="200" rx="12" fill="#F59E0B"/>
         <text class="n3cH" x="703" y="80" text-anchor="middle" fill="#111827" style="fill:#111827">rate too hot</text>
         <line x1="608" y1="200" x2="798" y2="200" stroke="#92400E" stroke-width="1" opacity="0.4"/>
         <path d="M 608 100 C 640 170, 660 180, 690 140 C 715 110, 740 170, 765 120 L 798 90" fill="none" stroke="#92400E" stroke-width="2.5"/>
-        <text class="n3cY" x="703" y="170" text-anchor="middle">falls, then overshoots the</text>
-        <text class="n3cY" x="703" y="188" text-anchor="middle">valley and thrashes upward</text>
-        <text class="n3cN" x="60" y="262">The middle panel is not a fixed number - the spiral needed 1.5 where moons liked 0.3. The right rate is a property</text>
-        <text class="n3cN" x="60" y="282">of the loss surface, which is why you sweep it first and why adaptive optimizers exist at all.</text>
+        <text class="n3cY" x="703" y="220" text-anchor="middle">falls, then overshoots the</text>
+        <text class="n3cY" x="703" y="236" text-anchor="middle">valley and thrashes upward</text>
+        <text class="n3cN" x="60" y="282">The middle panel is not a fixed number - the spiral needed 1.5 where moons liked 0.3. The right rate is a property</text>
+        <text class="n3cN" x="60" y="302">of the loss surface, which is why you sweep it first and why adaptive optimizers exist at all.</text>
       </svg>
       <figcaption>🔍 Click to zoom - the three endings of a learning rate, all reproducible on tonight's playground</figcaption>
     </figure>
